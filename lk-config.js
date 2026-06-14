@@ -11,8 +11,8 @@
 // ────────────────────────────────────────────────────────────
 
 window.LK_CONFIG = {
-  SUPABASE_URL: "ISI_PROJECT_URL_SUPABASE",
-  SUPABASE_ANON_KEY: "ISI_ANON_PUBLIC_KEY",
+  SUPABASE_URL: "https://aqffwrujklwgcnzfxtdq.supabase.co",
+  SUPABASE_ANON_KEY: "sb_publishable_WcT8mtbfKwy4oDlmafobdA_SUKwV3TK",
 };
 
 (function () {
