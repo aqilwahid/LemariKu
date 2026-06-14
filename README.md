@@ -89,11 +89,7 @@ Dibangun sebagai **single-page app statis — tanpa build step, tanpa instalasi*
 
 Karena Babel memuat file `.jsx` lewat *fetch*, aplikasi perlu dijalankan lewat **server statis** (membuka `index.html` langsung via `file://` akan diblokir browser karena CORS).
 
-**Opsi 1 — Server bawaan proyek (Node.js):**
-```bash
-npm start
-```
-Lalu buka `http://localhost:3000`
+**Opsi 1 — VS Code (paling mudah):** pasang ekstensi **Live Server**, lalu klik kanan `index.html` → *Open with Live Server*.
 
 **Opsi 2 — Python:**
 ```bash
@@ -101,7 +97,10 @@ python -m http.server 8000
 ```
 Lalu buka `http://localhost:8000`
 
-**Opsi 3 — VS Code:** gunakan ekstensi **Live Server**, klik kanan `index.html` → *Open with Live Server*.
+**Opsi 3 — Node.js:**
+```bash
+npx serve
+```
 
 > 💡 Untuk pengalaman terbaik, aktifkan **mode tampilan perangkat (device toolbar)** di DevTools browser, karena aplikasi ini didesain *mobile-first*.
 
@@ -116,28 +115,26 @@ LemariKu/
 ├── lk-data.jsx        # Palet, data awal, ikon, atom UI bersama, helper
 ├── lk-screens.jsx     # Tiga layar utama + modal (Add, Receipt/PDF, Share)
 ├── lk-app.jsx         # State root, navigasi, dan mounting aplikasi
-├── server.js          # Static server (untuk lokal & deploy Railway)
-├── package.json       # Skrip npm & metadata
 ├── LemariKu.png       # Pratinjau aplikasi
 └── uploads/           # Aset
 ```
 
 ---
 
-## ☁️ Deploy ke Railway
+## ▲ Deploy ke Vercel
 
-Proyek ini sudah disiapkan untuk langsung dideploy ke [Railway](https://railway.app) (lewat `server.js` + `package.json`). Cara termudah, **tanpa perlu terminal**:
+LemariKu adalah situs **statis murni**, jadi bisa dideploy ke [Vercel](https://vercel.com) **gratis (paket Hobby)** tanpa konfigurasi apa pun. Cara termudah, **tanpa perlu terminal**:
 
-1. Buka **https://railway.app** lalu **Login with GitHub**.
-2. Klik **New Project** → **Deploy from GitHub repo**.
-3. Pilih repo **`aqilwahid/LemariKu`** (beri izin akses GitHub bila diminta).
-4. Railway otomatis mendeteksi Node.js, menjalankan `npm install` lalu `npm start`. Tunggu hingga status build **Success**.
-5. Masuk ke tab **Settings → Networking → Generate Domain** untuk mendapatkan URL publik (mis. `lemariku-production.up.railway.app`).
-6. Selesai — buka URL itu di HP. 🎉
+1. Buka **https://vercel.com** → **Sign Up / Login** → **Continue with GitHub**.
+2. Di dashboard, klik **Add New… → Project**.
+3. Pada repo **`aqilwahid/LemariKu`**, klik **Import** (kalau belum muncul, klik **Adjust GitHub App Permissions** lalu beri akses).
+4. Di halaman konfigurasi, biarkan semua **default**:
+   - **Framework Preset:** *Other* (terdeteksi otomatis)
+   - **Build Command** & **Output Directory:** biarkan kosong — situs ini tidak perlu proses build.
+5. Klik **Deploy**, tunggu ±30 detik.
+6. Vercel memberi URL publik seperti `lemariku.vercel.app` — buka di HP. 🎉
 
-Setiap kali kamu `git push` ke branch `Main`, Railway otomatis build & deploy ulang.
-
-> ℹ️ Railway menyetel variabel `PORT` secara otomatis, dan `server.js` sudah membacanya — tidak perlu konfigurasi tambahan.
+Setiap kali kamu `git push` ke branch `Main`, Vercel otomatis deploy ulang. Domain kustom bisa diatur di **Settings → Domains**.
 
 ---
 
