@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <title>LemariKu — Wardrobe & Laundry Tracker</title>
 
 <!-- React (pinned) -->
@@ -79,6 +79,21 @@
 
   @keyframes lk-spin { to { transform: rotate(360deg); } }
   .lk-spin { animation: lk-spin 0.8s linear infinite; }
+
+  /* On real phones: fill the screen, drop the mockup-frame chrome */
+  @media (max-width: 520px) {
+    body { padding: 0 !important; background: var(--bg) !important; }
+    .lk-device {
+      width: 100vw !important;
+      height: 100vh !important;
+      height: 100dvh !important;
+      border-radius: 0 !important;
+      box-shadow: none !important;
+    }
+    .lk-device .lk-island,
+    .lk-device .lk-statusbar,
+    .lk-device .lk-homebar { display: none !important; }
+  }
 </style>
 </head>
 <body>

@@ -3,13 +3,16 @@
 /* ────────────────────────────────────────────────────────────
    Shared shell + primitives
 ──────────────────────────────────────────────────────────── */
-function ScreenShell({ title, subtitle, right, children }) {
+function ScreenShell({ title, subtitle, right, children, logo }) {
   return (
     <div className="flex h-full flex-col" style={{ background: 'var(--bg)' }}>
       <div style={{ paddingTop: 60, paddingLeft: 22, paddingRight: 22, paddingBottom: 8 }}>
         <div className="flex items-end justify-between">
-          <div>
-            <h1 className="font-serif" style={{ fontSize: 38, lineHeight: 1, color: 'var(--ink)', letterSpacing: '-0.01em' }}>{title}</h1>
+          <div style={{ minWidth: 0 }}>
+            <div className="flex items-center" style={{ gap: 10 }}>
+              {logo && <img src={logo} alt="" draggable={false} style={{ width: 40, height: 40, borderRadius: 11, objectFit: 'cover', flexShrink: 0, boxShadow: '0 2px 8px rgba(44,42,41,0.12)' }} />}
+              <h1 className="font-serif" style={{ fontSize: 38, lineHeight: 1, color: 'var(--ink)', letterSpacing: '-0.01em' }}>{title}</h1>
+            </div>
             {subtitle && <p style={{ fontSize: 13.5, color: 'var(--ink-60)', marginTop: 7 }}>{subtitle}</p>}
           </div>
           {right}
@@ -134,6 +137,7 @@ function Lemariku({ items, loading, onAdd, onOpenAdd, onUploadPhoto, userEmail, 
   return (
     <ScreenShell
       title="Lemariku"
+      logo="logo.png"
       subtitle={loading ? 'Memuat lemari…' : `${items.length} pakaian terkatalog`}
       right={
         <button

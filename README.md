@@ -6,6 +6,10 @@
 
 *Katalog isi lemarimu, lalu lacak setiap pakaian yang dikirim ke laundry — biar tidak ada lagi baju yang hilang.*
 
+![Versi](https://img.shields.io/badge/versi-1.0-6D8271?style=flat-square)
+![Stack](https://img.shields.io/badge/React%2018-Supabase-8C8B62?style=flat-square)
+![Mobile First](https://img.shields.io/badge/mobile--first-2C2A29?style=flat-square)
+
 ![LemariKu](LemariKu.png)
 
 </div>
@@ -163,6 +167,20 @@ LemariKu adalah situs **statis murni**, jadi bisa dideploy ke [Vercel](https://v
 6. Vercel memberi URL publik seperti `lemariku.vercel.app` — buka di HP. 🎉
 
 Setiap kali kamu `git push` ke branch `Main`, Vercel otomatis deploy ulang. Domain kustom bisa diatur di **Settings → Domains**.
+
+---
+
+## 🏷️ Rilis v1.0
+
+Versi pertama LemariKu yang siap dipakai sehari-hari:
+
+- ✅ **Login & akun** (email + password), akses dibatasi **11 pengguna**
+- ✅ **Database cloud (Supabase)** — data tersinkron antar-perangkat, tiap user punya lemari sendiri
+- ✅ **Katalog lemari** dengan foto, kategori, dan warna kain
+- ✅ **Kirim laundry** → buat batch dengan nama jasa & estimasi selesai
+- ✅ **Pelacakan status** batch + daftar visual untuk dicek saat pengambilan
+- ✅ **Logo brand** di header & tampilan **mobile penuh-layar** (responsif untuk HP)
+- ✅ Catatan/PDF & bagikan tautan (pratinjau)
 
 ---
 
