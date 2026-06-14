@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>LemariKu — Wardrobe & Laundry Tracker</title>
+
+<!-- React (pinned) -->
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<!-- Tailwind -->
+<script src="https://cdn.tailwindcss.com"></script>
+
+<!-- Lucide (vanilla UMD — provides icon node data) -->
+<script src="https://unpkg.com/lucide@0.456.0/dist/umd/lucide.min.js"></script>
+
+<!-- Fonts: Hanken Grotesk (UI) + Instrument Serif (display) -->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet" />
+
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          bg:    '#FAF6F0',
+          ink:   '#2C2A29',
+          sage:  '#6D8271',
+          card:  '#F1EBE3',
+        },
+        fontFamily: {
+          sans:  ['"Hanken Grotesk"', 'system-ui', 'sans-serif'],
+          serif: ['"Instrument Serif"', 'Georgia', 'serif'],
+        },
+      },
+    },
+  };
+</script>
+
+<style>
+  :root {
+    --bg:   #FAF6F0;
+    --ink:  #2C2A29;
+    --sage: #6D8271;
+    --card: #F1EBE3;
+    --ink-60: rgba(44,42,41,0.60);
+    --ink-40: rgba(44,42,41,0.40);
+    --line:   rgba(44,42,41,0.09);
+    --sage-tint: #E7EBE4;
+  }
+  * { -webkit-font-smoothing: antialiased; box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    font-family: '"Hanken Grotesk"', 'Hanken Grotesk', system-ui, sans-serif;
+    background:
+      radial-gradient(1200px 800px at 20% -10%, #F3EEE6 0%, transparent 60%),
+      radial-gradient(1000px 700px at 100% 110%, #EEF1EA 0%, transparent 55%),
+      #EDE7DD;
+    display: flex; align-items: center; justify-content: center;
+    min-height: 100vh; padding: 24px;
+  }
+  #root { display: flex; align-items: center; justify-content: center; }
+
+  /* hide scrollbars inside the phone but keep scroll */
+  .lk-scroll { scrollbar-width: none; -ms-overflow-style: none; }
+  .lk-scroll::-webkit-scrollbar { display: none; }
+
+  @keyframes lk-fade-up { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+  @keyframes lk-pop      { from { opacity: 0; transform: scale(0.96) translateY(8px); } to { opacity: 1; transform: none; } }
+  @keyframes lk-toast-in { from { opacity: 0; transform: translate(-50%, 16px); } to { opacity: 1; transform: translate(-50%, 0); } }
+  @keyframes lk-sheet-in { from { transform: translateY(100%); } to { transform: translateY(0); } }
+  @keyframes lk-backdrop { from { opacity: 0; } to { opacity: 1; } }
+
+  .anim-fade-up { animation: lk-fade-up 0.45s cubic-bezier(0.22,0.61,0.36,1) both; }
+  .anim-pop     { animation: lk-pop 0.3s cubic-bezier(0.22,0.61,0.36,1) both; }
+</style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel" src="ios-frame.jsx"></script>
+  <script type="text/babel" src="lk-data.jsx"></script>
+  <script type="text/babel" src="lk-screens.jsx"></script>
+  <script type="text/babel" src="lk-app.jsx"></script>
+</body>
+</html>
