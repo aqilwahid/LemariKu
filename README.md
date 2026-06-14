@@ -70,7 +70,7 @@ Dibangun sebagai **single-page app statis — tanpa build step, tanpa instalasi*
 - **Babel Standalone** — transpile JSX langsung di browser
 - **Tailwind CSS** (CDN) dengan palet warna *Japandi* kustom
 - **Lucide Icons** (UMD)
-- **Google Fonts** — Hanken Grotesk (UI) + Instrument Serif (display)
+- **Google Fonts** — Poppins (UI) + Playfair Display (display)
 - **localStorage** untuk penyimpanan data lokal
 - Desain **mobile-first**, dibungkus dalam *frame* perangkat iOS
 
@@ -87,20 +87,21 @@ Dibangun sebagai **single-page app statis — tanpa build step, tanpa instalasi*
 
 ## 🚀 Menjalankan Secara Lokal
 
-Karena Babel memuat file `.jsx` lewat *fetch*, aplikasi perlu dijalankan lewat **server statis** (membuka `LemariKu.html` langsung via `file://` akan diblokir browser karena CORS).
+Karena Babel memuat file `.jsx` lewat *fetch*, aplikasi perlu dijalankan lewat **server statis** (membuka `index.html` langsung via `file://` akan diblokir browser karena CORS).
 
-**Opsi 1 — Python:**
+**Opsi 1 — Server bawaan proyek (Node.js):**
+```bash
+npm start
+```
+Lalu buka `http://localhost:3000`
+
+**Opsi 2 — Python:**
 ```bash
 python -m http.server 8000
 ```
-Lalu buka `http://localhost:8000/LemariKu.html`
+Lalu buka `http://localhost:8000`
 
-**Opsi 2 — Node.js:**
-```bash
-npx serve
-```
-
-**Opsi 3 — VS Code:** gunakan ekstensi **Live Server**, klik kanan `LemariKu.html` → *Open with Live Server*.
+**Opsi 3 — VS Code:** gunakan ekstensi **Live Server**, klik kanan `index.html` → *Open with Live Server*.
 
 > 💡 Untuk pengalaman terbaik, aktifkan **mode tampilan perangkat (device toolbar)** di DevTools browser, karena aplikasi ini didesain *mobile-first*.
 
@@ -110,14 +111,33 @@ npx serve
 
 ```
 LemariKu/
-├── LemariKu.html      # Entry point — memuat dependency CDN & semua script
+├── index.html         # Entry point — memuat dependency CDN & semua script
 ├── ios-frame.jsx      # Komponen frame perangkat iOS
 ├── lk-data.jsx        # Palet, data awal, ikon, atom UI bersama, helper
 ├── lk-screens.jsx     # Tiga layar utama + modal (Add, Receipt/PDF, Share)
 ├── lk-app.jsx         # State root, navigasi, dan mounting aplikasi
+├── server.js          # Static server (untuk lokal & deploy Railway)
+├── package.json       # Skrip npm & metadata
 ├── LemariKu.png       # Pratinjau aplikasi
 └── uploads/           # Aset
 ```
+
+---
+
+## ☁️ Deploy ke Railway
+
+Proyek ini sudah disiapkan untuk langsung dideploy ke [Railway](https://railway.app) (lewat `server.js` + `package.json`). Cara termudah, **tanpa perlu terminal**:
+
+1. Buka **https://railway.app** lalu **Login with GitHub**.
+2. Klik **New Project** → **Deploy from GitHub repo**.
+3. Pilih repo **`aqilwahid/LemariKu`** (beri izin akses GitHub bila diminta).
+4. Railway otomatis mendeteksi Node.js, menjalankan `npm install` lalu `npm start`. Tunggu hingga status build **Success**.
+5. Masuk ke tab **Settings → Networking → Generate Domain** untuk mendapatkan URL publik (mis. `lemariku-production.up.railway.app`).
+6. Selesai — buka URL itu di HP. 🎉
+
+Setiap kali kamu `git push` ke branch `Main`, Railway otomatis build & deploy ulang.
+
+> ℹ️ Railway menyetel variabel `PORT` secara otomatis, dan `server.js` sudah membacanya — tidak perlu konfigurasi tambahan.
 
 ---
 
