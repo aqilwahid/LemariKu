@@ -76,14 +76,23 @@
 
   .anim-fade-up { animation: lk-fade-up 0.45s cubic-bezier(0.22,0.61,0.36,1) both; }
   .anim-pop     { animation: lk-pop 0.3s cubic-bezier(0.22,0.61,0.36,1) both; }
+
+  @keyframes lk-spin { to { transform: rotate(360deg); } }
+  .lk-spin { animation: lk-spin 0.8s linear infinite; }
 </style>
 </head>
 <body>
   <div id="root"></div>
 
+  <!-- Supabase client (UMD) + konfigurasi proyek -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="lk-config.js"></script>
+
   <script type="text/babel" src="ios-frame.jsx"></script>
   <script type="text/babel" src="lk-data.jsx"></script>
+  <script type="text/babel" src="lk-api.jsx"></script>
   <script type="text/babel" src="lk-screens.jsx"></script>
+  <script type="text/babel" src="lk-auth.jsx"></script>
   <script type="text/babel" src="lk-app.jsx"></script>
 </body>
 </html>

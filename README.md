@@ -36,7 +36,8 @@ Dari sinilah **LemariKu** dibuat: sebuah aplikasi berbasis web (**mobile-first**
 | 🧾 | **Catatan / PDF** | Buat tanda terima berisi daftar pakaian sebagai bukti. |
 | 🔗 | **Bagikan Tautan** | Bagikan daftar laundry lewat tautan (WhatsApp, email, dll.) tanpa perlu aplikasi. |
 | ✅ | **Tandai Selesai** | Saat baju diambil, tandai batch selesai — pakaian otomatis kembali ke status *Di Lemari*. |
-| 💾 | **Tersimpan Otomatis** | Seluruh data (katalog, foto, batch) tersimpan di perangkat lewat `localStorage` — tetap ada walau halaman ditutup. |
+| 🔐 | **Login & Akses Terbatas** | Masuk dengan email + password. Akses dibatasi maksimal **11 pengguna** (daftar sendiri, dijaga oleh database). |
+| ☁️ | **Database Cloud & Sinkron** | Data (katalog, foto, batch) tersimpan di **Supabase** dan tersinkron — bisa diakses dari perangkat mana pun setelah login. Tiap user punya lemari sendiri. |
 
 ---
 
@@ -71,7 +72,7 @@ Dibangun sebagai **single-page app statis — tanpa build step, tanpa instalasi*
 - **Tailwind CSS** (CDN) dengan palet warna *Japandi* kustom
 - **Lucide Icons** (UMD)
 - **Google Fonts** — Poppins (UI) + Playfair Display (display)
-- **localStorage** untuk penyimpanan data lokal
+- **Supabase** — Autentikasi (login email/password) + database **PostgreSQL**, dipanggil langsung dari browser dan diamankan dengan **Row Level Security**
 - Desain **mobile-first**, dibungkus dalam *frame* perangkat iOS
 
 ### 🎨 Palet Warna
@@ -82,6 +83,29 @@ Dibangun sebagai **single-page app statis — tanpa build step, tanpa instalasi*
 | `ink` | `#2C2A29` | Teks / aksen gelap |
 | `sage` | `#6D8271` | Warna primer / aksi |
 | `card` | `#F1EBE3` | Permukaan kartu |
+
+---
+
+## 🔐 Setup Login & Database (Supabase)
+
+Login dan penyimpanan data ditangani oleh **[Supabase](https://supabase.com)** (gratis). Aplikasi tetap statis — Supabase dipanggil langsung dari browser dan diamankan dengan **Row Level Security**, jadi tiap user hanya bisa mengakses datanya sendiri. Akses dibatasi **maksimal 11 pengguna** (pendaftaran ke-12 ditolak otomatis oleh database).
+
+Sekali setup (~5 menit):
+
+1. **Buat proyek** — daftar di [supabase.com](https://supabase.com) → **New Project** (simpan password database baik-baik). Tunggu proyek selesai disiapkan.
+2. **Jalankan SQL** — buka **SQL Editor → New query** → tempel **seluruh isi** [`supabase-setup.sql`](supabase-setup.sql) → **Run**. Ini membuat tabel, mengaktifkan keamanan, dan memasang batas 11 pengguna.
+3. **Matikan konfirmasi email** — **Authentication → Providers → Email** → matikan **"Confirm email"** → Save. (Agar user bisa langsung masuk setelah daftar, tanpa setup email.)
+4. **Ambil kunci** — **Project Settings → API**, salin **Project URL** dan **anon public** key.
+5. **Tempel ke** [`lk-config.js`](lk-config.js):
+   ```js
+   window.LK_CONFIG = {
+     SUPABASE_URL: "https://xxxx.supabase.co",
+     SUPABASE_ANON_KEY: "eyJhbGci...",
+   };
+   ```
+6. Simpan & buka aplikasi → layar **login** muncul. 11 orang pertama yang mendaftar mendapat slot.
+
+> 🔒 **Aman dipublikasikan:** `anon public key` memang dirancang untuk sisi browser. Keamanan data dijaga oleh Row Level Security di database, bukan oleh kerahasiaan key ini — jadi boleh ikut di-commit ke GitHub.
 
 ---
 
@@ -111,10 +135,14 @@ npx serve
 ```
 LemariKu/
 ├── index.html         # Entry point — memuat dependency CDN & semua script
+├── lk-config.js       # ⚙️ Kredensial Supabase (URL + anon key) — WAJIB diisi
 ├── ios-frame.jsx      # Komponen frame perangkat iOS
 ├── lk-data.jsx        # Palet, data awal, ikon, atom UI bersama, helper
+├── lk-api.jsx         # Lapisan akses data: login + CRUD ke Supabase
 ├── lk-screens.jsx     # Tiga layar utama + modal (Add, Receipt/PDF, Share)
-├── lk-app.jsx         # State root, navigasi, dan mounting aplikasi
+├── lk-auth.jsx        # Layar login / daftar
+├── lk-app.jsx         # Auth gate, state tersinkron Supabase, mounting
+├── supabase-setup.sql # Skrip SQL: tabel, keamanan (RLS), batas 11 user
 ├── LemariKu.png       # Pratinjau aplikasi
 └── uploads/           # Aset
 ```
@@ -123,7 +151,7 @@ LemariKu/
 
 ## ▲ Deploy ke Vercel
 
-LemariKu adalah situs **statis murni**, jadi bisa dideploy ke [Vercel](https://vercel.com) **gratis (paket Hobby)** tanpa konfigurasi apa pun. Cara termudah, **tanpa perlu terminal**:
+LemariKu adalah situs **statis murni**, jadi bisa dideploy ke [Vercel](https://vercel.com) **gratis (paket Hobby)** tanpa konfigurasi apa pun. (Pastikan `lk-config.js` sudah diisi — lihat **Setup Login & Database** di atas — agar login berfungsi.) Cara termudah, **tanpa perlu terminal**:
 
 1. Buka **https://vercel.com** → **Sign Up / Login** → **Continue with GitHub**.
 2. Di dashboard, klik **Add New… → Project**.
@@ -140,11 +168,13 @@ Setiap kali kamu `git push` ke branch `Main`, Vercel otomatis deploy ulang. Doma
 
 ## 🗺️ Status & Roadmap
 
-LemariKu saat ini adalah **prototipe fungsional** dengan data tersimpan secara lokal di browser. Beberapa hal yang direncanakan ke depan:
+LemariKu kini punya **login + database cloud** (Supabase) dengan akses terbatas 11 pengguna. Beberapa hal yang direncanakan ke depan:
 
+- [x] Login & akses terbatas (maks 11 pengguna)
+- [x] Sinkronisasi antar-perangkat (akun & cloud via Supabase)
 - [ ] Ekspor PDF asli yang dapat diunduh (saat ini masih berupa pratinjau catatan)
 - [ ] Tautan berbagi yang benar-benar dapat dibuka (saat ini masih placeholder)
-- [ ] Sinkronisasi antar-perangkat (akun & cloud)
+- [ ] Simpan foto di Supabase Storage (saat ini foto disimpan sebagai data URL)
 - [ ] Riwayat laundry & statistik (frekuensi, jasa langganan)
 - [ ] Notifikasi pengingat estimasi selesai
 

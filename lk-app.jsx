@@ -1,56 +1,82 @@
-// lk-app.jsx — root state, navigation, mounting
-const LK_STORE = 'lemariku_state_v1';
-function lkLoad() {
-  try { const r = JSON.parse(localStorage.getItem(LK_STORE)); if (r && Array.isArray(r.items)) return r; } catch (e) { /* ignore */ }
-  return null;
-}
-const LK_SAVED = lkLoad();
+// lk-app.jsx — auth gate, root state tersinkron ke Supabase, navigasi, mounting
 
-function App() {
-  const [screen, setScreen] = useState('lemariku');
-  const [items, setItems] = useState(LK_SAVED ? LK_SAVED.items : SEED_ITEMS);
-  const [batches, setBatches] = useState(LK_SAVED ? LK_SAVED.batches : []);
-  const [batchSeq, setBatchSeq] = useState(LK_SAVED ? LK_SAVED.batchSeq : 1);
+/* ════════════════════════════════════════════════════════════
+   APP (setelah login) — data dimuat & disimpan ke Supabase
+════════════════════════════════════════════════════════════ */
+function App({ session }) {
+  const userEmail = (session && session.user && session.user.email) || "";
 
-  // persist wardrobe + batches (incl. uploaded photos) across reloads
-  useEffect(() => {
-    try { localStorage.setItem(LK_STORE, JSON.stringify({ items, batches, batchSeq })); } catch (e) { /* quota — keeps working in-session */ }
-  }, [items, batches, batchSeq]);
+  const [screen, setScreen] = useState("lemariku");
+  const [items, setItems] = useState([]);
+  const [batches, setBatches] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  // kirim flow state
+  // kirim flow
   const [selected, setSelected] = useState(new Set());
-  const [vendor, setVendor] = useState('');
-  const [due, setDue] = useState('');
+  const [vendor, setVendor] = useState("");
+  const [due, setDue] = useState("");
 
   // modals
   const [addOpen, setAddOpen] = useState(false);
   const [receiptBatch, setReceiptBatch] = useState(null);
   const [shareBatch, setShareBatch] = useState(null);
+  const [accountOpen, setAccountOpen] = useState(false);
 
   // toast
   const [toast, setToast] = useState(null);
   const toastTimer = useRef(null);
-  function showToast(msg, icon = 'Check') {
+  function showToast(msg, icon = "Check") {
     clearTimeout(toastTimer.current);
     setToast({ msg, icon, key: Date.now() });
     toastTimer.current = setTimeout(() => setToast(null), 2600);
   }
 
+  // muat data milik user dari Supabase saat login
+  useEffect(() => {
+    let alive = true;
+    setLoading(true);
+    LK_API.loadAll()
+      .then(({ items, batches }) => {
+        if (!alive) return;
+        setItems(items);
+        setBatches(batches);
+        setLoading(false);
+      })
+      .catch(() => {
+        if (!alive) return;
+        setLoading(false);
+        showToast("Gagal memuat data", "TriangleAlert");
+      });
+    return () => { alive = false; };
+  }, []);
+
   const itemsById = {};
   items.forEach((it) => { itemsById[it.id] = it; });
   const washingCount = items.filter((it) => it.status === STATUS.CUCI).length;
+  const nextSeq = batches.reduce((m, b) => Math.max(m, b.seq || 0), 0) + 1;
 
   /* ─── handlers ─── */
-  function handleAdd({ name, category, color, photo }) {
-    const item = { id: uid(), name, category, color, photo: photo || null, status: STATUS.LEMARI };
-    setItems((prev) => [item, ...prev]);
-    setAddOpen(false);
-    showToast(`"${name}" ditambahkan ke lemari`, 'Plus');
+  async function handleAdd({ name, category, color, photo }) {
+    try {
+      const row = await LK_API.createItem({ name, category, color, photo, status: STATUS.LEMARI });
+      setItems((prev) => [row, ...prev]);
+      setAddOpen(false);
+      showToast(`"${name}" ditambahkan ke lemari`, "Plus");
+    } catch (e) {
+      showToast("Gagal menyimpan pakaian", "TriangleAlert");
+    }
   }
 
-  function handleUploadPhoto(id, photo) {
-    setItems((prev) => prev.map((it) => (it.id === id ? { ...it, photo } : it)));
-    showToast('Foto pakaian disimpan', 'Camera');
+  async function handleUploadPhoto(id, photo) {
+    const snapshot = items;
+    setItems((prev) => prev.map((it) => (it.id === id ? { ...it, photo } : it))); // optimistik
+    try {
+      await LK_API.updateItem(id, { photo });
+      showToast("Foto pakaian disimpan", "Camera");
+    } catch (e) {
+      setItems(snapshot); // balikkan jika gagal
+      showToast("Gagal menyimpan foto", "TriangleAlert");
+    }
   }
 
   function toggleSelect(id) {
@@ -61,52 +87,73 @@ function App() {
     });
   }
 
-  function handleProcess() {
+  async function handleProcess() {
     const ids = [...selected];
     if (!ids.length || !vendor.trim()) return;
-    const label = `Batch #${batchSeq}`;
-    const batch = {
-      id: uid('b'),
-      label,
-      vendor: vendor.trim(),
-      due: due || todayISO(),
-      itemIds: ids,
-      created: todayISO(),
-      code: Math.random().toString(36).slice(2, 8),
-    };
-    setBatches((prev) => [batch, ...prev]);
-    setBatchSeq((n) => n + 1);
-    setItems((prev) => prev.map((it) => (selected.has(it.id) ? { ...it, status: STATUS.CUCI } : it)));
-    setSelected(new Set());
-    setVendor('');
-    setDue('');
-    setScreen('status');
-    showToast(`${ids.length} pakaian dikirim ke ${batch.vendor}`, 'WashingMachine');
+    const seq = nextSeq;
+    try {
+      const batch = await LK_API.createBatch({
+        label: `Batch #${seq}`,
+        vendor: vendor.trim(),
+        due: due || todayISO(),
+        item_ids: ids,
+        code: Math.random().toString(36).slice(2, 8),
+        seq,
+        created: todayISO(),
+      });
+      await LK_API.setItemsStatus(ids, STATUS.CUCI);
+      setBatches((prev) => [batch, ...prev]);
+      setItems((prev) => prev.map((it) => (selected.has(it.id) ? { ...it, status: STATUS.CUCI } : it)));
+      setSelected(new Set());
+      setVendor("");
+      setDue("");
+      setScreen("status");
+      showToast(`${ids.length} pakaian dikirim ke ${batch.vendor}`, "WashingMachine");
+    } catch (e) {
+      showToast("Gagal memproses laundry", "TriangleAlert");
+    }
   }
 
-  function handleComplete(batch) {
-    setItems((prev) => prev.map((it) => (batch.itemIds.includes(it.id) ? { ...it, status: STATUS.LEMARI } : it)));
-    setBatches((prev) => prev.filter((b) => b.id !== batch.id));
-    showToast('Pakaian sudah diambil & kembali ke lemari', 'PackageCheck');
+  async function handleComplete(batch) {
+    try {
+      await LK_API.setItemsStatus(batch.itemIds, STATUS.LEMARI);
+      await LK_API.deleteBatch(batch.id);
+      setItems((prev) => prev.map((it) => (batch.itemIds.includes(it.id) ? { ...it, status: STATUS.LEMARI } : it)));
+      setBatches((prev) => prev.filter((b) => b.id !== batch.id));
+      showToast("Pakaian sudah diambil & kembali ke lemari", "PackageCheck");
+    } catch (e) {
+      showToast("Gagal menyelesaikan batch", "TriangleAlert");
+    }
   }
 
   function handleDownload(batch) {
     setReceiptBatch(null);
-    showToast('PDF tersimpan ke perangkat', 'FileCheck');
+    showToast("PDF tersimpan ke perangkat", "FileCheck");
   }
 
   function handleCopy(link) {
     try {
       navigator.clipboard && navigator.clipboard.writeText(link);
     } catch (e) { /* ignore */ }
-    showToast('Tautan disalin ke clipboard', 'Link');
+    showToast("Tautan disalin ke clipboard", "Link");
   }
 
-  /* ─── render active screen ─── */
+  async function handleLogout() {
+    setAccountOpen(false);
+    try { await LK_API.signOut(); } catch (e) { /* Root menampilkan login lewat onAuthChange */ }
+  }
+
+  /* ─── render layar aktif ─── */
   let body = null;
-  if (screen === 'lemariku') {
-    body = <Lemariku items={items} onAdd={handleAdd} onOpenAdd={() => setAddOpen(true)} onUploadPhoto={handleUploadPhoto} />;
-  } else if (screen === 'kirim') {
+  if (screen === "lemariku") {
+    body = (
+      <Lemariku
+        items={items} loading={loading}
+        onAdd={handleAdd} onOpenAdd={() => setAddOpen(true)} onUploadPhoto={handleUploadPhoto}
+        userEmail={userEmail} onOpenAccount={() => setAccountOpen(true)}
+      />
+    );
+  } else if (screen === "kirim") {
     body = (
       <KirimLaundry
         items={items} selected={selected} onToggle={toggleSelect}
@@ -119,30 +166,109 @@ function App() {
       <StatusTracker
         batches={batches} itemsById={itemsById}
         onPDF={setReceiptBatch} onShare={setShareBatch} onComplete={handleComplete}
-        goKirim={() => setScreen('kirim')}
+        goKirim={() => setScreen("kirim")}
       />
     );
   }
 
   return (
-    <div className="relative h-full w-full overflow-hidden" style={{ background: 'var(--bg)' }}>
-      <div key={screen} className="h-full">
-        {body}
-      </div>
+    <div className="relative h-full w-full overflow-hidden" style={{ background: "var(--bg)" }}>
+      <div key={screen} className="h-full">{body}</div>
 
       <BottomNav active={screen} onChange={setScreen} washingCount={washingCount} />
 
       <AddItemSheet open={addOpen} onClose={() => setAddOpen(false)} onSave={handleAdd} />
       <ReceiptModal batch={receiptBatch} itemsById={itemsById} onClose={() => setReceiptBatch(null)} onDownload={handleDownload} />
       <ShareModal batch={shareBatch} onClose={() => setShareBatch(null)} onCopy={handleCopy} onToast={showToast} />
+      <AccountSheet open={accountOpen} email={userEmail} onClose={() => setAccountOpen(false)} onLogout={handleLogout} />
 
       <Toast toast={toast} />
     </div>
   );
 }
 
-ReactDOM.createRoot(document.getElementById('root')).render(
+/* ─── Sheet akun (info user + keluar) ─── */
+function AccountSheet({ open, email, onClose, onLogout }) {
+  return (
+    <Sheet open={open} onClose={onClose} maxH="52%">
+      <div style={{ padding: "8px 22px 30px" }}>
+        <div className="flex items-center justify-between" style={{ marginBottom: 18 }}>
+          <h2 className="font-serif" style={{ fontSize: 26, color: "var(--ink)" }}>Akun</h2>
+          <button onClick={onClose} className="flex items-center justify-center rounded-full" style={{ width: 34, height: 34, background: "var(--card)", color: "var(--ink-60)" }}>
+            <Icon name="X" size={18} stroke={2} />
+          </button>
+        </div>
+        <div className="flex items-center gap-3" style={{ background: "var(--card)", borderRadius: 16, padding: 14, marginBottom: 18 }}>
+          <span className="flex items-center justify-center rounded-full" style={{ width: 46, height: 46, background: "var(--sage)", color: "#fff", fontSize: 19, fontWeight: 700, textTransform: "uppercase", flexShrink: 0 }}>{(email || "?").slice(0, 1)}</span>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontSize: 12, color: "var(--ink-40)" }}>Masuk sebagai</div>
+            <div className="truncate" style={{ fontSize: 14.5, fontWeight: 600, color: "var(--ink)" }}>{email}</div>
+          </div>
+        </div>
+        <button onClick={onLogout} className="flex w-full items-center justify-center gap-2 rounded-2xl font-semibold transition-all active:scale-[0.985]" style={{ padding: "14px", fontSize: 15, background: "white", color: "#b4453c", border: "1px solid var(--line)" }}>
+          <Icon name="LogOut" size={18} stroke={2} /> Keluar
+        </button>
+      </div>
+    </Sheet>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════
+   AUTH GATE — menentukan layar: konfigurasi / loading / login / app
+════════════════════════════════════════════════════════════ */
+function LoadingScreen({ label }) {
+  return (
+    <div className="flex h-full w-full flex-col items-center justify-center" style={{ background: "var(--bg)" }}>
+      <div className="lk-spin" style={{ width: 34, height: 34, borderRadius: "50%", border: "3px solid var(--sage-tint)", borderTopColor: "var(--sage)" }}></div>
+      <p style={{ fontSize: 13.5, color: "var(--ink-60)", marginTop: 16 }}>{label || "Memuat…"}</p>
+    </div>
+  );
+}
+
+function ConfigNeeded() {
+  return (
+    <div className="flex h-full w-full flex-col" style={{ background: "var(--bg)", paddingTop: 72 }}>
+      <div className="lk-scroll flex-1 overflow-y-auto" style={{ padding: "0 26px 40px" }}>
+        <div className="flex items-center justify-center rounded-2xl" style={{ width: 58, height: 58, background: "var(--sage-tint)", color: "var(--sage)" }}>
+          <Icon name="Database" size={28} stroke={1.6} />
+        </div>
+        <h1 className="font-serif" style={{ fontSize: 33, color: "var(--ink)", marginTop: 16, lineHeight: 1.05 }}>Hampir siap</h1>
+        <p style={{ fontSize: 14, color: "var(--ink-60)", marginTop: 10, lineHeight: 1.55 }}>
+          Login &amp; database belum terhubung. Buka file <strong>lk-config.js</strong> lalu isi
+          {" "}<strong>SUPABASE_URL</strong> dan <strong>SUPABASE_ANON_KEY</strong> dari proyek Supabase-mu.
+        </p>
+        <div style={{ marginTop: 16, background: "var(--card)", borderRadius: 14, padding: "14px 16px", fontSize: 12.5, color: "var(--ink-60)", lineHeight: 1.7 }}>
+          <div style={{ fontWeight: 700, color: "var(--ink)", marginBottom: 6 }}>Langkah singkat</div>
+          1. Buat proyek gratis di supabase.com<br />
+          2. Jalankan isi <strong>supabase-setup.sql</strong> di SQL Editor<br />
+          3. Salin Project URL + anon key ke <strong>lk-config.js</strong><br />
+          4. Matikan “Confirm email” di Authentication → Providers
+        </div>
+        <p style={{ fontSize: 12, color: "var(--ink-40)", marginTop: 14 }}>Panduan lengkap ada di README.</p>
+      </div>
+    </div>
+  );
+}
+
+function Root() {
+  const [session, setSession] = useState(undefined); // undefined=cek, null=belum login
+
+  useEffect(() => {
+    if (!window.sb) return;
+    let sub;
+    LK_API.getSession().then((s) => setSession(s || null)).catch(() => setSession(null));
+    sub = LK_API.onAuthChange((s) => setSession(s || null));
+    return () => { if (sub && sub.unsubscribe) sub.unsubscribe(); };
+  }, []);
+
+  if (!window.sb) return <ConfigNeeded />;
+  if (session === undefined) return <LoadingScreen label="Menyiapkan…" />;
+  if (!session) return <AuthScreen />;
+  return <App session={session} key={session.user ? session.user.id : "app"} />;
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(
   <IOSDevice>
-    <App />
+    <Root />
   </IOSDevice>
 );

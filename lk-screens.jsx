@@ -127,18 +127,23 @@ function PhotoTile({ photo, color, category, onPick, size = 'lg' }) {
 /* ════════════════════════════════════════════════════════════
    SCREEN 1 — LEMARIKU (wardrobe catalog)
 ════════════════════════════════════════════════════════════ */
-function Lemariku({ items, onAdd, onOpenAdd, onUploadPhoto }) {
+function Lemariku({ items, loading, onAdd, onOpenAdd, onUploadPhoto, userEmail, onOpenAccount }) {
   const [cat, setCat] = useState('Semua');
   const list = items.filter((it) => cat === 'Semua' || it.category === cat);
 
   return (
     <ScreenShell
       title="Lemariku"
-      subtitle={`${items.length} pakaian terkatalog`}
+      subtitle={loading ? 'Memuat lemari…' : `${items.length} pakaian terkatalog`}
       right={
-        <div className="text-right" style={{ color: 'var(--ink-40)' }}>
-          <Icon name="Shirt" size={30} stroke={1.4} />
-        </div>
+        <button
+          onClick={onOpenAccount}
+          className="flex items-center justify-center rounded-full transition-transform active:scale-90"
+          style={{ width: 42, height: 42, background: 'var(--sage)', color: '#fff', fontSize: 17, fontWeight: 700, textTransform: 'uppercase', boxShadow: '0 4px 12px rgba(109,130,113,0.35)' }}
+          aria-label="Akun"
+        >
+          {(userEmail || '?').slice(0, 1)}
+        </button>
       }
     >
       {/* category tabs */}
@@ -167,8 +172,12 @@ function Lemariku({ items, onAdd, onOpenAdd, onUploadPhoto }) {
 
       {/* grid */}
       <div className="lk-scroll flex-1 overflow-y-auto" style={{ padding: '4px 18px 120px' }}>
-        {list.length === 0 ? (
-          <EmptyState icon="Shirt" title="Belum ada di kategori ini" body="Tambahkan pakaian baru lewat tombol +" />
+        {loading ? (
+          <div className="flex items-center justify-center" style={{ padding: '70px 0' }}>
+            <div className="lk-spin" style={{ width: 30, height: 30, borderRadius: '50%', border: '3px solid var(--sage-tint)', borderTopColor: 'var(--sage)' }}></div>
+          </div>
+        ) : list.length === 0 ? (
+          <EmptyState icon="Shirt" title={items.length === 0 ? 'Lemari masih kosong' : 'Belum ada di kategori ini'} body="Tambahkan pakaian lewat tombol +" />
         ) : (
           <div className="grid grid-cols-2 gap-3.5">
             {list.map((it, idx) => (
