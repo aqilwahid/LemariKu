@@ -4,7 +4,7 @@ function _authFriendly(error) {
   const m = (error && error.message) || "";
   if (/invalid login credentials/i.test(m)) return "Email atau password salah.";
   if (/already registered|already been registered|user already/i.test(m)) return "Email ini sudah terdaftar — silakan Masuk.";
-  if (/database error|saving new user/i.test(m)) return "Pendaftaran penuh (maks 11 pengguna) atau gagal. Hubungi admin.";
+  if (/database error|saving new user/i.test(m)) return "Pendaftaran penuh (maks 10 pengguna) atau gagal. Hubungi admin.";
   if (/email/i.test(m) && /valid/i.test(m)) return "Format email tidak valid.";
   if (/password/i.test(m)) return "Password minimal 6 karakter.";
   if (/rate limit|too many/i.test(m)) return "Terlalu banyak percobaan. Coba lagi sebentar.";
@@ -61,10 +61,8 @@ function AuthScreen() {
     <div className="flex h-full w-full flex-col" style={{ background: "var(--bg)", paddingTop: 64 }}>
       <div className="lk-scroll flex flex-1 flex-col justify-center overflow-y-auto" style={{ padding: "0 26px 48px" }}>
         {/* brand */}
-        <div className="flex flex-col items-center" style={{ marginBottom: 26 }}>
-          <div className="flex items-center justify-center rounded-2xl" style={{ width: 66, height: 66, background: "var(--sage-tint)", color: "var(--sage)" }}>
-            <Icon name="Shirt" size={33} stroke={1.6} />
-          </div>
+        <div className="flex flex-col items-center animate-fade-up" style={{ marginBottom: 26 }}>
+          <img src="logo.png" alt="LemariKu" draggable={false} style={{ width: 140, height: 140, objectFit: 'contain' }} />
           <h1 className="font-serif" style={{ fontSize: 42, color: "var(--ink)", marginTop: 14, lineHeight: 1 }}>LemariKu</h1>
           <p style={{ fontSize: 13.5, color: "var(--ink-60)", marginTop: 8, textAlign: "center" }}>Catat lemari &amp; lacak laundry-mu</p>
         </div>
@@ -134,7 +132,7 @@ function AuthScreen() {
 
         <p style={{ fontSize: 11.5, color: "var(--ink-40)", textAlign: "center", marginTop: 14, lineHeight: 1.5 }}>
           {isSignup
-            ? "Akses terbatas untuk 11 pengguna pertama."
+            ? "Akses terbatas untuk 10 pengguna pertama."
             : "Belum punya akun? Pilih “Daftar” di atas."}
         </p>
       </div>

@@ -71,8 +71,8 @@ create policy "batches_update_own" on public.batches for update using (auth.uid(
 drop policy if exists "batches_delete_own" on public.batches;
 create policy "batches_delete_own" on public.batches for delete using (auth.uid() = user_id);
 
--- 6) Saat ada user baru daftar: buat profil + BATASI maksimum 11 pengguna.
---    Pendaftaran ke-12 dst. akan ditolak otomatis oleh database.
+-- 6) Saat ada user baru daftar: buat profil + BATASI maksimum 10 pengguna.
+--    Pendaftaran ke-11 dst. akan ditolak otomatis oleh database.
 create or replace function public.handle_new_user()
 returns trigger
 language plpgsql
@@ -80,8 +80,8 @@ security definer
 set search_path = public
 as $$
 begin
-  if (select count(*) from public.profiles) >= 11 then
-    raise exception 'Pendaftaran penuh: batas 11 pengguna telah tercapai.';
+  if (select count(*) from public.profiles) >= 10 then
+    raise exception 'Pendaftaran penuh: batas 10 pengguna telah tercapai.';
   end if;
   insert into public.profiles (id, email) values (new.id, new.email);
   return new;

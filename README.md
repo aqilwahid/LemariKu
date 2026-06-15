@@ -40,7 +40,7 @@ Dari sinilah **LemariKu** dibuat: sebuah aplikasi berbasis web (**mobile-first**
 | 🧾 | **Catatan / PDF** | Buat tanda terima berisi daftar pakaian sebagai bukti. |
 | 🔗 | **Bagikan Tautan** | Bagikan daftar laundry lewat tautan (WhatsApp, email, dll.) tanpa perlu aplikasi. |
 | ✅ | **Tandai Selesai** | Saat baju diambil, tandai batch selesai — pakaian otomatis kembali ke status *Di Lemari*. |
-| 🔐 | **Login & Akses Terbatas** | Masuk dengan email + password. Akses dibatasi maksimal **11 pengguna** (daftar sendiri, dijaga oleh database). |
+| 🔐 | **Login & Akses Terbatas** | Masuk dengan email + password. Akses dibatasi maksimal **10 pengguna** (daftar sendiri, dijaga oleh database). |
 | ☁️ | **Database Cloud & Sinkron** | Data (katalog, foto, batch) tersimpan di **Supabase** dan tersinkron — bisa diakses dari perangkat mana pun setelah login. Tiap user punya lemari sendiri. |
 
 ---
@@ -92,12 +92,12 @@ Dibangun sebagai **single-page app statis — tanpa build step, tanpa instalasi*
 
 ## 🔐 Setup Login & Database (Supabase)
 
-Login dan penyimpanan data ditangani oleh **[Supabase](https://supabase.com)** (gratis). Aplikasi tetap statis — Supabase dipanggil langsung dari browser dan diamankan dengan **Row Level Security**, jadi tiap user hanya bisa mengakses datanya sendiri. Akses dibatasi **maksimal 11 pengguna** (pendaftaran ke-12 ditolak otomatis oleh database).
+Login dan penyimpanan data ditangani oleh **[Supabase](https://supabase.com)** (gratis). Aplikasi tetap statis — Supabase dipanggil langsung dari browser dan diamankan dengan **Row Level Security**, jadi tiap user hanya bisa mengakses datanya sendiri. Akses dibatasi **maksimal 10 pengguna** (pendaftaran ke-11 ditolak otomatis oleh database).
 
 Sekali setup (~5 menit):
 
 1. **Buat proyek** — daftar di [supabase.com](https://supabase.com) → **New Project** (simpan password database baik-baik). Tunggu proyek selesai disiapkan.
-2. **Jalankan SQL** — buka **SQL Editor → New query** → tempel **seluruh isi** [`supabase-setup.sql`](supabase-setup.sql) → **Run**. Ini membuat tabel, mengaktifkan keamanan, dan memasang batas 11 pengguna.
+2. **Jalankan SQL** — buka **SQL Editor → New query** → tempel **seluruh isi** [`supabase-setup.sql`](supabase-setup.sql) → **Run**. Ini membuat tabel, mengaktifkan keamanan, dan memasang batas 10 pengguna.
 3. **Matikan konfirmasi email** — **Authentication → Providers → Email** → matikan **"Confirm email"** → Save. (Agar user bisa langsung masuk setelah daftar, tanpa setup email.)
 4. **Ambil kunci** — **Project Settings → API**, salin **Project URL** dan **anon public** key.
 5. **Tempel ke** [`lk-config.js`](lk-config.js):
@@ -107,7 +107,7 @@ Sekali setup (~5 menit):
      SUPABASE_ANON_KEY: "eyJhbGci...",
    };
    ```
-6. Simpan & buka aplikasi → layar **login** muncul. 11 orang pertama yang mendaftar mendapat slot.
+6. Simpan & buka aplikasi → layar **login** muncul. 10 orang pertama yang mendaftar mendapat slot.
 
 > 🔒 **Aman dipublikasikan:** `anon public key` memang dirancang untuk sisi browser. Keamanan data dijaga oleh Row Level Security di database, bukan oleh kerahasiaan key ini — jadi boleh ikut di-commit ke GitHub.
 
@@ -146,7 +146,7 @@ LemariKu/
 ├── lk-screens.jsx     # Tiga layar utama + modal (Add, Receipt/PDF, Share)
 ├── lk-auth.jsx        # Layar login / daftar
 ├── lk-app.jsx         # Auth gate, state tersinkron Supabase, mounting
-├── supabase-setup.sql # Skrip SQL: tabel, keamanan (RLS), batas 11 user
+├── supabase-setup.sql # Skrip SQL: tabel, keamanan (RLS), batas 10 user
 ├── LemariKu.png       # Pratinjau aplikasi
 └── uploads/           # Aset
 ```
@@ -174,7 +174,7 @@ Setiap kali kamu `git push` ke branch `Main`, Vercel otomatis deploy ulang. Doma
 
 Versi pertama LemariKu yang siap dipakai sehari-hari:
 
-- ✅ **Login & akun** (email + password), akses dibatasi **11 pengguna**
+- ✅ **Login & akun** (email + password), akses dibatasi **10 pengguna**
 - ✅ **Database cloud (Supabase)** — data tersinkron antar-perangkat, tiap user punya lemari sendiri
 - ✅ **Katalog lemari** dengan foto, kategori, dan warna kain
 - ✅ **Kirim laundry** → buat batch dengan nama jasa & estimasi selesai
@@ -186,9 +186,9 @@ Versi pertama LemariKu yang siap dipakai sehari-hari:
 
 ## 🗺️ Status & Roadmap
 
-LemariKu kini punya **login + database cloud** (Supabase) dengan akses terbatas 11 pengguna. Beberapa hal yang direncanakan ke depan:
+LemariKu kini punya **login + database cloud** (Supabase) dengan akses terbatas 10 pengguna. Beberapa hal yang direncanakan ke depan:
 
-- [x] Login & akses terbatas (maks 11 pengguna)
+- [x] Login & akses terbatas (maks 10 pengguna)
 - [x] Sinkronisasi antar-perangkat (akun & cloud via Supabase)
 - [ ] Ekspor PDF asli yang dapat diunduh (saat ini masih berupa pratinjau catatan)
 - [ ] Tautan berbagi yang benar-benar dapat dibuka (saat ini masih placeholder)

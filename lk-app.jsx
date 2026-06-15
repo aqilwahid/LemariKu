@@ -177,7 +177,7 @@ function App({ session }) {
 
       <BottomNav active={screen} onChange={setScreen} washingCount={washingCount} />
 
-      <AddItemSheet open={addOpen} onClose={() => setAddOpen(false)} onSave={handleAdd} />
+      <AddItemSheet open={addOpen} items={items} onClose={() => setAddOpen(false)} onSave={handleAdd} />
       <ReceiptModal batch={receiptBatch} itemsById={itemsById} onClose={() => setReceiptBatch(null)} onDownload={handleDownload} />
       <ShareModal batch={shareBatch} onClose={() => setShareBatch(null)} onCopy={handleCopy} onToast={showToast} />
       <AccountSheet open={accountOpen} email={userEmail} onClose={() => setAccountOpen(false)} onLogout={handleLogout} />

@@ -9,9 +9,12 @@ function ScreenShell({ title, subtitle, right, children, logo }) {
       <div style={{ paddingTop: 60, paddingLeft: 22, paddingRight: 22, paddingBottom: 8 }}>
         <div className="flex items-end justify-between">
           <div style={{ minWidth: 0 }}>
-            <div className="flex items-center" style={{ gap: 10 }}>
-              {logo && <img src={logo} alt="" draggable={false} style={{ width: 40, height: 40, borderRadius: 11, objectFit: 'cover', flexShrink: 0, boxShadow: '0 2px 8px rgba(44,42,41,0.12)' }} />}
-              <h1 className="font-serif" style={{ fontSize: 38, lineHeight: 1, color: 'var(--ink)', letterSpacing: '-0.01em' }}>{title}</h1>
+            <div className="flex items-center animate-fade-up" style={{ gap: 10 }}>
+              {logo ? (
+                <img src={logo} alt="" draggable={false} style={{ height: 100, objectFit: 'contain', flexShrink: 0 }} />
+              ) : (
+                title && <h1 className="font-serif" style={{ fontSize: 38, lineHeight: 1, color: 'var(--ink)', letterSpacing: '-0.01em' }}>{title}</h1>
+              )}
             </div>
             {subtitle && <p style={{ fontSize: 13.5, color: 'var(--ink-60)', marginTop: 7 }}>{subtitle}</p>}
           </div>
@@ -134,6 +137,14 @@ function Lemariku({ items, loading, onAdd, onOpenAdd, onUploadPhoto, userEmail, 
   const [cat, setCat] = useState('Semua');
   const list = items.filter((it) => cat === 'Semua' || it.category === cat);
 
+  const dynamicCategories = React.useMemo(() => {
+    const base = ['Semua', 'Kaos', 'Kemeja', 'Celana', 'Jaket'];
+    const itemCats = items.map(it => it.category).filter(Boolean);
+    const unique = Array.from(new Set(itemCats));
+    const extra = unique.filter(c => !['Kaos', 'Kemeja', 'Celana', 'Jaket'].includes(c));
+    return [...base, ...extra];
+  }, [items]);
+
   return (
     <ScreenShell
       title="Lemariku"
@@ -152,7 +163,7 @@ function Lemariku({ items, loading, onAdd, onOpenAdd, onUploadPhoto, userEmail, 
     >
       {/* category tabs */}
       <div className="lk-scroll flex gap-2 overflow-x-auto" style={{ padding: '6px 22px 10px' }}>
-        {CATEGORIES.map((c) => {
+        {dynamicCategories.map((c) => {
           const on = cat === c;
           const n = c === 'Semua' ? items.length : items.filter((i) => i.category === c).length;
           return (
@@ -234,17 +245,37 @@ function EmptyState({ icon, title, body }) {
 }
 
 /* ─── Add item modal ─── */
-function AddItemSheet({ open, onClose, onSave }) {
+function AddItemSheet({ open, items = [], onClose, onSave }) {
   const [name, setName] = useState('');
   const [cat, setCat] = useState('Kaos');
   const [color, setColor] = useState('sage');
   const [photo, setPhoto] = useState(null);
 
+  // Custom category states
+  const [isCustom, setIsCustom] = useState(false);
+  const [customVal, setCustomVal] = useState('');
+
+  const baseCats = ['Kaos', 'Kemeja', 'Celana', 'Jaket'];
+  const allCats = React.useMemo(() => {
+    const itemCats = items.map(it => it.category).filter(Boolean);
+    const unique = Array.from(new Set(itemCats));
+    const extra = unique.filter(c => !baseCats.includes(c));
+    return [...baseCats, ...extra];
+  }, [items]);
+
   useEffect(() => {
-    if (open) { setName(''); setCat('Kaos'); setColor('sage'); setPhoto(null); }
+    if (open) {
+      setName('');
+      setCat('Kaos');
+      setColor('sage');
+      setPhoto(null);
+      setIsCustom(false);
+      setCustomVal('');
+    }
   }, [open]);
 
-  const valid = name.trim().length > 0;
+  const resolvedCat = isCustom ? customVal.trim() : cat;
+  const valid = name.trim().length > 0 && resolvedCat.length > 0;
 
   return (
     <Sheet open={open} onClose={onClose}>
@@ -259,10 +290,10 @@ function AddItemSheet({ open, onClose, onSave }) {
         {/* live preview — tap tile to add a photo */}
         <div className="flex items-center gap-3.5" style={{ background: 'var(--card)', borderRadius: 18, padding: 12, marginBottom: 20 }}>
           <div className="overflow-hidden rounded-xl" style={{ width: 64, height: 64, flexShrink: 0 }}>
-            <PhotoTile photo={photo} color={color} category={cat} onPick={setPhoto} size="sm" />
+            <PhotoTile photo={photo} color={color} category={resolvedCat} onPick={setPhoto} size="sm" />
           </div>
           <div style={{ minWidth: 0 }}>
-            <div style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--ink-40)' }}>{cat}</div>
+            <div style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--ink-40)' }}>{resolvedCat || 'Kategori Baru'}</div>
             <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--ink)', marginTop: 2 }}>{name.trim() || 'Nama pakaian…'}</div>
             <div style={{ fontSize: 11.5, color: 'var(--ink-40)', marginTop: 3 }}>{photo ? 'Ketuk foto untuk mengganti' : 'Ketuk untuk tambah foto'}</div>
           </div>
@@ -279,11 +310,11 @@ function AddItemSheet({ open, onClose, onSave }) {
 
           <Field label="Kategori">
             <div className="flex flex-wrap gap-2">
-              {['Kaos', 'Kemeja', 'Celana', 'Jaket'].map((c) => {
-                const on = cat === c;
+              {allCats.map((c) => {
+                const on = !isCustom && cat === c;
                 return (
                   <button
-                    key={c} onClick={() => setCat(c)}
+                    key={c} type="button" onClick={() => { setCat(c); setIsCustom(false); }}
                     className="rounded-full transition-all active:scale-95"
                     style={{
                       padding: '9px 16px', fontSize: 13.5, fontWeight: on ? 600 : 500,
@@ -293,7 +324,29 @@ function AddItemSheet({ open, onClose, onSave }) {
                   >{c}</button>
                 );
               })}
+              <button
+                type="button" onClick={() => setIsCustom(true)}
+                className="rounded-full transition-all active:scale-95"
+                style={{
+                  padding: '9px 16px', fontSize: 13.5, fontWeight: isCustom ? 600 : 500,
+                  background: isCustom ? 'var(--sage)' : 'white', color: isCustom ? '#fff' : 'var(--ink-60)',
+                  border: isCustom ? '1px solid var(--sage)' : '1px solid var(--line)',
+                }}
+              >
+                + Kategori Baru
+              </button>
             </div>
+
+            {isCustom && (
+              <div style={{ marginTop: 12 }}>
+                <input
+                  className={inputCls} style={inputStyle}
+                  value={customVal} onChange={(e) => setCustomVal(e.target.value)}
+                  placeholder="Tulis kategori baru... (cth. Outer, Jeans, Sepatu)"
+                  autoFocus
+                />
+              </div>
+            )}
           </Field>
 
           <Field label="Warna Kain">
@@ -319,7 +372,7 @@ function AddItemSheet({ open, onClose, onSave }) {
         </div>
 
         <div style={{ marginTop: 26 }}>
-          <PrimaryButton icon="Plus" disabled={!valid} onClick={() => valid && onSave({ name: name.trim(), category: cat, color, photo })}>
+          <PrimaryButton icon="Plus" disabled={!valid} onClick={() => valid && onSave({ name: name.trim(), category: resolvedCat, color, photo })}>
             Simpan Pakaian
           </PrimaryButton>
         </div>
