@@ -632,7 +632,7 @@ function StatusTracker({ batches, itemsById, onPDF, onShare, onComplete, goKirim
   );
 }
 
-/* ─── PDF / receipt modal ─── */
+/* ─── PDF / receipt modal (preview di layar) ─── */
 function ReceiptModal({ batch, itemsById, onClose, onDownload }) {
   if (!batch) return null;
   const its = batch.itemIds.map((id) => itemsById[id]).filter(Boolean);
@@ -646,48 +646,181 @@ function ReceiptModal({ batch, itemsById, onClose, onDownload }) {
           </button>
         </div>
 
-        {/* paper note */}
-        <div style={{ background: 'white', borderRadius: 16, border: '1px solid var(--line)', boxShadow: '0 8px 24px rgba(44,42,41,0.08)', overflow: 'hidden' }}>
-          <div style={{ padding: '18px 20px', borderBottom: '1px dashed rgba(44,42,41,0.16)' }}>
-            <div className="flex items-center justify-between">
-              <span className="font-serif" style={{ fontSize: 19, color: 'var(--ink)' }}>LemariKu</span>
-              <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--sage)' }}>Tanda Terima</span>
-            </div>
-            <div className="grid grid-cols-2 gap-y-2" style={{ marginTop: 14, fontSize: 12.5 }}>
-              <span style={{ color: 'var(--ink-40)' }}>Jasa Laundry</span>
-              <span style={{ color: 'var(--ink)', fontWeight: 600, textAlign: 'right' }}>{batch.vendor}</span>
-              <span style={{ color: 'var(--ink-40)' }}>Estimasi Selesai</span>
-              <span style={{ color: 'var(--ink)', fontWeight: 600, textAlign: 'right' }}>{fmtShort(batch.due)}</span>
-              <span style={{ color: 'var(--ink-40)' }}>Total Pakaian</span>
-              <span style={{ color: 'var(--ink)', fontWeight: 600, textAlign: 'right' }}>{its.length} item</span>
-            </div>
+        {/* paper note — masthead tegas + tabel jelas */}
+        <div style={{ background: 'white', borderRadius: 16, border: '1.5px solid var(--ink)', boxShadow: '0 10px 28px rgba(44,42,41,0.12)', overflow: 'hidden' }}>
+          {/* masthead */}
+          <div className="flex items-center justify-between" style={{ background: 'var(--ink)', color: '#FAF6F0', padding: '15px 20px' }}>
+            <span className="font-serif" style={{ fontSize: 21, fontWeight: 700 }}>LemariKu</span>
+            <span style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', border: '1.5px solid rgba(250,246,240,0.5)', borderRadius: 6, padding: '4px 8px' }}>Tanda Terima</span>
           </div>
-          <div style={{ padding: '6px 20px 16px' }}>
+
+          {/* meta */}
+          <div style={{ padding: '4px 20px' }}>
+            <ReceiptMeta label="Jasa Laundry" value={batch.vendor} strong />
+            <ReceiptMeta label="Estimasi Selesai" value={fmtShort(batch.due)} />
+            <ReceiptMeta label="Total Pakaian" value={`${its.length} item`} last />
+          </div>
+
+          {/* daftar */}
+          <div style={{ padding: '4px 20px 14px' }}>
+            <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--ink-40)', padding: '10px 0 8px', borderTop: '1.5px solid var(--ink)' }}>Isi cucian · centang saat ambil</div>
             {its.map((it, i) => (
               <div key={it.id} className="flex items-center gap-3" style={{ padding: '9px 0', borderBottom: i < its.length - 1 ? '1px solid var(--line)' : 'none' }}>
+                <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink-40)', width: 18, flexShrink: 0 }}>{i + 1}</span>
                 <div className="overflow-hidden rounded-lg" style={{ width: 34, height: 34, flexShrink: 0 }}><ClothingThumb color={it.color} category={it.category} photo={it.photo} size="sm" /></div>
-                <span style={{ flex: 1, fontSize: 13.5, color: 'var(--ink)' }}>{it.name}</span>
-                <span className="flex items-center justify-center rounded" style={{ width: 18, height: 18, border: '1.5px solid var(--ink-40)', color: 'transparent', fontSize: 10 }}>☐</span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--ink)', lineHeight: 1.2 }} className="truncate">{it.name}</div>
+                  <div style={{ fontSize: 11, color: 'var(--ink-40)' }}>{it.category}</div>
+                </div>
+                <span className="rounded" style={{ width: 18, height: 18, border: '1.5px solid var(--ink-40)', flexShrink: 0 }}></span>
               </div>
             ))}
           </div>
-          <div style={{ padding: '11px 20px', background: 'var(--bg)', fontSize: 11, color: 'var(--ink-40)', textAlign: 'center' }}>
+          <div style={{ padding: '11px 20px', background: 'var(--bg)', borderTop: '1px dashed rgba(44,42,41,0.2)', fontSize: 11, color: 'var(--ink-40)', textAlign: 'center' }}>
             Dibuat {fmtShort(batch.created)} · Cocokkan daftar ini saat pengambilan
           </div>
         </div>
 
         <div style={{ marginTop: 20 }}>
-          <PrimaryButton icon="Download" onClick={() => onDownload(batch)}>Unduh PDF</PrimaryButton>
+          <PrimaryButton icon="Printer" onClick={() => onDownload(batch)}>Cetak / Simpan PDF</PrimaryButton>
+          <p style={{ fontSize: 11.5, color: 'var(--ink-40)', textAlign: 'center', marginTop: 9 }}>
+            Akan membuka dialog cetak — pilih “Simpan sebagai PDF”.
+          </p>
         </div>
       </div>
     </Sheet>
   );
 }
 
+function ReceiptMeta({ label, value, strong, last }) {
+  return (
+    <div className="flex items-center justify-between" style={{ padding: '10px 0', borderBottom: last ? 'none' : '1px solid var(--line)' }}>
+      <span style={{ fontSize: 11.5, color: 'var(--ink-40)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{label}</span>
+      <span style={{ fontSize: strong ? 15.5 : 13.5, fontWeight: strong ? 700 : 600, color: 'var(--ink)', textAlign: 'right' }}>{value}</span>
+    </div>
+  );
+}
+
+/* ─── PrintReceipt — markup khusus cetak (A4, hitam-putih tegas) ───
+   Dirender lewat portal ke #lk-print di luar frame iOS, lalu dipanggil
+   window.print(). Lihat aturan @media print di index.html. */
+function PrintReceipt({ batch, itemsById }) {
+  if (!batch) return null;
+  const its = batch.itemIds.map((id) => itemsById[id]).filter(Boolean);
+  const cell = { border: '1px solid #2C2A29', padding: '8px 10px', fontSize: 12, textAlign: 'left', verticalAlign: 'middle' };
+  const head = { ...cell, background: '#2C2A29', color: '#fff', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', fontSize: 11, WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' };
+
+  return (
+    <div style={{ fontFamily: "'Poppins', system-ui, sans-serif", color: '#2C2A29', maxWidth: 720, margin: '0 auto' }}>
+      {/* masthead */}
+      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', paddingBottom: 12, borderBottom: '3px solid #2C2A29' }}>
+        <div>
+          <div style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 30, fontWeight: 700, lineHeight: 1 }}>LemariKu</div>
+          <div style={{ fontSize: 12, color: '#6b6764', marginTop: 4 }}>Tanda Terima Laundry</div>
+        </div>
+        <div style={{ textAlign: 'right', fontSize: 11.5 }}>
+          <div><strong>No.</strong> {batch.label || '—'}</div>
+          <div style={{ color: '#6b6764' }}>Kode {batch.code}</div>
+        </div>
+      </div>
+
+      {/* meta */}
+      <table style={{ width: '100%', borderCollapse: 'collapse', margin: '16px 0 18px' }}>
+        <tbody>
+          <tr>
+            <td style={{ ...cell, width: '25%', color: '#6b6764' }}>Jasa Laundry</td>
+            <td style={{ ...cell, width: '25%', fontWeight: 700 }}>{batch.vendor}</td>
+            <td style={{ ...cell, width: '25%', color: '#6b6764' }}>Estimasi Selesai</td>
+            <td style={{ ...cell, width: '25%', fontWeight: 700 }}>{fmtDate(batch.due)}</td>
+          </tr>
+          <tr>
+            <td style={{ ...cell, color: '#6b6764' }}>Tanggal Dibuat</td>
+            <td style={cell}>{fmtDate(batch.created)}</td>
+            <td style={{ ...cell, color: '#6b6764' }}>Total Pakaian</td>
+            <td style={{ ...cell, fontWeight: 700 }}>{its.length} item</td>
+          </tr>
+        </tbody>
+      </table>
+
+      {/* daftar pakaian */}
+      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <thead>
+          <tr>
+            <th style={{ ...head, width: 36, textAlign: 'center' }}>No</th>
+            <th style={head}>Pakaian</th>
+            <th style={{ ...head, width: 120 }}>Kategori</th>
+            <th style={{ ...head, width: 110 }}>Warna</th>
+            <th style={{ ...head, width: 80, textAlign: 'center' }}>Diterima</th>
+          </tr>
+        </thead>
+        <tbody>
+          {its.map((it, i) => {
+            const fab = FABRIC[it.color] || FABRIC.oat;
+            return (
+              <tr key={it.id}>
+                <td style={{ ...cell, textAlign: 'center', fontWeight: 700 }}>{i + 1}</td>
+                <td style={{ ...cell, fontWeight: 600 }}>{it.name}</td>
+                <td style={cell}>{it.category}</td>
+                <td style={cell}>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                    <span style={{ width: 12, height: 12, borderRadius: 3, background: fab.fill, border: '1px solid rgba(0,0,0,0.25)', display: 'inline-block', WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}></span>
+                    {fab.label}
+                  </span>
+                </td>
+                <td style={{ ...cell, textAlign: 'center' }}>
+                  <span style={{ width: 15, height: 15, border: '1.5px solid #2C2A29', borderRadius: 3, display: 'inline-block' }}></span>
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+
+      {/* tanda tangan */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 40, marginTop: 40 }}>
+        {['Penyetor', 'Penerima Laundry'].map((r) => (
+          <div key={r} style={{ flex: 1, textAlign: 'center' }}>
+            <div style={{ borderBottom: '1px solid #2C2A29', height: 48 }}></div>
+            <div style={{ fontSize: 11.5, color: '#6b6764', marginTop: 6 }}>{r}</div>
+          </div>
+        ))}
+      </div>
+
+      <div style={{ textAlign: 'center', fontSize: 10.5, color: '#9a9693', marginTop: 28 }}>
+        Cocokkan daftar ini saat pengambilan cucian · Dibuat dengan LemariKu
+      </div>
+    </div>
+  );
+}
+
 /* ─── Share modal ─── */
 function ShareModal({ batch, onClose, onCopy, onToast }) {
   if (!batch) return null;
-  const link = `lemariku.app/l/${batch.code}`;
+  const origin = (typeof window !== 'undefined' && window.location && window.location.origin && window.location.origin.indexOf('http') === 0)
+    ? window.location.origin
+    : 'https://lemari-ku.vercel.app';
+  const link = `${origin}/l/${batch.code}`;
+  const display = link.replace(/^https?:\/\//, '');
+  const message = `Daftar laundry ${batch.itemIds.length} pakaian di ${batch.vendor}. Lihat & cocokkan di sini:\n${link}`;
+
+  function shareVia(name) {
+    if (name === 'Salin') { onCopy(link); return; }
+    if (name === 'WhatsApp') {
+      window.open('https://wa.me/?text=' + encodeURIComponent(message), '_blank');
+      return;
+    }
+    if (name === 'Email') {
+      window.location.href = 'mailto:?subject=' + encodeURIComponent(`Daftar laundry — ${batch.vendor}`) + '&body=' + encodeURIComponent(message);
+      return;
+    }
+    // Lainnya → share sheet bawaan perangkat jika ada
+    if (navigator.share) {
+      navigator.share({ title: 'Daftar Laundry — LemariKu', text: message, url: link }).catch(() => {});
+    } else {
+      onCopy(link);
+    }
+  }
+
   const targets = [
     { name: 'WhatsApp', icon: 'MessageCircle', tint: '#5A8A6A' },
     { name: 'Salin', icon: 'Copy', tint: '#2C2A29' },
@@ -708,7 +841,7 @@ function ShareModal({ batch, onClose, onCopy, onToast }) {
         </p>
         <div className="flex items-center gap-2" style={{ background: 'white', border: '1px solid var(--line)', borderRadius: 14, padding: '12px 14px' }}>
           <Icon name="Link" size={17} className="shrink-0" style={{ color: 'var(--ink-40)' }} />
-          <span style={{ flex: 1, fontSize: 14, color: 'var(--ink)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{link}</span>
+          <span style={{ flex: 1, fontSize: 14, color: 'var(--ink)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{display}</span>
           <button onClick={() => onCopy(link)} className="rounded-lg font-semibold transition-all active:scale-95" style={{ padding: '8px 12px', fontSize: 12.5, background: 'var(--sage)', color: '#fff' }}>Salin</button>
         </div>
 
@@ -716,7 +849,7 @@ function ShareModal({ batch, onClose, onCopy, onToast }) {
           {targets.map((t) => (
             <button
               key={t.name}
-              onClick={() => (t.name === 'Salin' ? onCopy(link) : onToast(`Dibagikan via ${t.name}`, 'Share2'))}
+              onClick={() => shareVia(t.name)}
               className="flex flex-col items-center gap-2 transition-transform active:scale-90"
             >
               <span className="flex items-center justify-center rounded-2xl" style={{ width: 54, height: 54, background: 'var(--card)', color: t.tint }}>
@@ -829,5 +962,5 @@ function ItemDetailSheet({ item, onClose, onDelete, onUploadPhoto }) {
 Object.assign(window, {
   ScreenShell, PrimaryButton, Sheet, Field, EmptyState, PhotoTile,
   Lemariku, AddItemSheet, KirimLaundry, StatusTracker, ReceiptModal, ShareModal,
-  ItemDetailSheet,
+  ItemDetailSheet, PrintReceipt,
 });

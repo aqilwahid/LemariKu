@@ -93,6 +93,44 @@ create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_user();
 
+-- 7) Berbagi tautan publik (halaman /l/<kode>)
+--    Pengunjung TANPA login boleh melihat SATU batch — hanya jika tahu kodenya.
+--    Fungsi ini "security definer" sehingga bisa membaca data milik user lain,
+--    TAPI hanya mengembalikan batch yang kodenya cocok + foto/nama pakaiannya.
+--    Tidak ada cara mengintip batch lain karena kode bersifat acak & rahasia.
+create or replace function public.get_shared_batch(p_code text)
+returns jsonb
+language sql
+security definer
+set search_path = public
+stable
+as $$
+  select jsonb_build_object(
+    'label',   b.label,
+    'vendor',  b.vendor,
+    'due',     b.due,
+    'created', b.created,
+    'count',   coalesce(jsonb_array_length(b.item_ids), 0),
+    'items', coalesce((
+      select jsonb_agg(jsonb_build_object(
+        'name',     i.name,
+        'category', i.category,
+        'color',    i.color,
+        'photo',    i.photo
+      ) order by i.created_at desc)
+      from public.items i
+      where i.id::text in (select jsonb_array_elements_text(b.item_ids))
+    ), '[]'::jsonb)
+  )
+  from public.batches b
+  where b.code = p_code
+  limit 1;
+$$;
+
+-- Hanya boleh dipanggil sebagai RPC (tidak membuka akses tabel langsung).
+revoke all on function public.get_shared_batch(text) from public;
+grant execute on function public.get_shared_batch(text) to anon, authenticated;
+
 -- ============================================================
 --  Selesai.
 --  Disarankan: Authentication → Providers → Email → matikan

@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Daftar Laundry — LemariKu</title>
+
+<!-- React (pinned) -->
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" crossorigin="anonymous"></script>
+
+<!-- Tailwind -->
+<script src="https://cdn.tailwindcss.com"></script>
+
+<!-- Lucide (icon node data) -->
+<script src="https://unpkg.com/lucide@0.456.0/dist/umd/lucide.min.js"></script>
+
+<!-- Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet" />
+
+<style>
+  :root {
+    --bg:   #FAF6F0;
+    --ink:  #2C2A29;
+    --sage: #6D8271;
+    --card: #F1EBE3;
+    --ink-60: rgba(44,42,41,0.60);
+    --ink-40: rgba(44,42,41,0.40);
+    --line:   rgba(44,42,41,0.12);
+    --sage-tint: #E7EBE4;
+  }
+  * { -webkit-font-smoothing: antialiased; box-sizing: border-box; }
+  html, body { margin: 0; min-height: 100%; }
+  body {
+    font-family: 'Poppins', system-ui, sans-serif;
+    background:
+      radial-gradient(1200px 800px at 20% -10%, #F3EEE6 0%, transparent 60%),
+      radial-gradient(1000px 700px at 100% 110%, #EEF1EA 0%, transparent 55%),
+      #EDE7DD;
+    color: var(--ink);
+    padding: 28px 16px 56px;
+  }
+  .lk-spin { animation: lk-spin 0.8s linear infinite; }
+  @keyframes lk-spin { to { transform: rotate(360deg); } }
+  @keyframes lk-fade-up { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+  .anim-up { animation: lk-fade-up 0.5s cubic-bezier(0.22,0.61,0.36,1) both; }
+
+  /* print: tampilkan hanya kartu, buang background & tombol */
+  @media print {
+    @page { size: A4; margin: 14mm; }
+    body { background: #fff !important; padding: 0 !important; }
+    .no-print { display: none !important; }
+    .sheet { box-shadow: none !important; border: 1px solid #111 !important; }
+    .swatch, .tile { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
+</style>
+</head>
+<body>
+  <div id="share-root"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="lk-config.js"></script>
+  <script type="text/babel" src="lk-data.jsx"></script>
+
+  <script type="text/babel">
+    // useState/useEffect sudah jadi global dari lk-data.jsx (jangan dideklarasikan ulang).
+
+    function getCode() {
+      const m = window.location.pathname.match(/\/l\/([^/?#]+)/);
+      if (m) return decodeURIComponent(m[1]);
+      const q = new URLSearchParams(window.location.search).get('c');
+      return q || null;
+    }
+
+    function Centered({ children }) {
+      return (
+        <div style={{ maxWidth: 560, margin: '0 auto', minHeight: '70vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div className="anim-up" style={{ textAlign: 'center', padding: '0 16px' }}>{children}</div>
+        </div>
+      );
+    }
+
+    function ShareApp() {
+      const [status, setStatus] = useState('loading'); // loading | ready | notfound | error
+      const [data, setData] = useState(null);
+
+      useEffect(() => {
+        const code = getCode();
+        if (!code) { setStatus('notfound'); return; }
+        if (!window.sb) { setStatus('error'); return; }
+        window.sb.rpc('get_shared_batch', { p_code: code })
+          .then(({ data, error }) => {
+            if (error) { setStatus('error'); return; }
+            if (!data) { setStatus('notfound'); return; }
+            setData(data); setStatus('ready');
+          })
+          .catch(() => setStatus('error'));
+      }, []);
+
+      if (status === 'loading') {
+        return (
+          <Centered>
+            <div className="lk-spin" style={{ width: 34, height: 34, borderRadius: '50%', border: '3px solid var(--sage-tint)', borderTopColor: 'var(--sage)', margin: '0 auto' }}></div>
+            <p style={{ fontSize: 14, color: 'var(--ink-60)', marginTop: 16 }}>Memuat daftar…</p>
+          </Centered>
+        );
+      }
+
+      if (status === 'notfound') {
+        return (
+          <Centered>
+            <div style={{ display: 'inline-flex', width: 64, height: 64, borderRadius: 20, background: 'var(--card)', color: 'var(--ink-40)', alignItems: 'center', justifyContent: 'center' }}>
+              <Icon name="SearchX" size={30} stroke={1.6} />
+            </div>
+            <h1 className="font-serif" style={{ fontFamily: '"Playfair Display", serif', fontSize: 26, marginTop: 18 }}>Daftar tidak ditemukan</h1>
+            <p style={{ fontSize: 14, color: 'var(--ink-60)', marginTop: 8, lineHeight: 1.55 }}>Tautan mungkin salah, atau daftar laundrynya sudah selesai &amp; dihapus.</p>
+          </Centered>
+        );
+      }
+
+      if (status === 'error') {
+        return (
+          <Centered>
+            <div style={{ display: 'inline-flex', width: 64, height: 64, borderRadius: 20, background: 'var(--card)', color: '#b4453c', alignItems: 'center', justifyContent: 'center' }}>
+              <Icon name="TriangleAlert" size={30} stroke={1.6} />
+            </div>
+            <h1 className="font-serif" style={{ fontFamily: '"Playfair Display", serif', fontSize: 26, marginTop: 18 }}>Gagal memuat</h1>
+            <p style={{ fontSize: 14, color: 'var(--ink-60)', marginTop: 8, lineHeight: 1.55 }}>Coba muat ulang halaman ini sebentar lagi.</p>
+          </Centered>
+        );
+      }
+
+      const items = data.items || [];
+      const created = data.created ? fmtShort(data.created) : '—';
+      const due = data.due ? fmtDate(data.due) : '—';
+
+      return (
+        <div style={{ maxWidth: 560, margin: '0 auto' }}>
+          {/* brand bar */}
+          <div className="no-print" style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16, paddingLeft: 4 }}>
+            <span className="font-serif" style={{ fontFamily: '"Playfair Display", serif', fontSize: 22, fontWeight: 700 }}>LemariKu</span>
+            <span style={{ fontSize: 12, color: 'var(--ink-40)' }}>· Daftar laundry dibagikan</span>
+          </div>
+
+          {/* receipt sheet */}
+          <div className="sheet anim-up" style={{ background: '#fff', borderRadius: 20, border: '1.5px solid var(--ink)', overflow: 'hidden', boxShadow: '0 20px 50px rgba(44,42,41,0.14)' }}>
+            {/* masthead */}
+            <div style={{ background: 'var(--ink)', color: '#FAF6F0', padding: '18px 22px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span className="font-serif" style={{ fontFamily: '"Playfair Display", serif', fontSize: 24, fontWeight: 700, letterSpacing: '0.01em' }}>LemariKu</span>
+              <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', border: '1.5px solid rgba(250,246,240,0.5)', borderRadius: 6, padding: '5px 9px' }}>Tanda Terima</span>
+            </div>
+
+            {/* meta rows */}
+            <div style={{ padding: '4px 22px' }}>
+              <MetaRow label="Jasa Laundry" value={data.vendor} strong />
+              <MetaRow label="Estimasi Selesai" value={due} />
+              <MetaRow label="Total Pakaian" value={(data.count || items.length) + ' item'} />
+              <MetaRow label="Tanggal Dibuat" value={created} last />
+            </div>
+
+            {/* items */}
+            <div style={{ padding: '14px 22px 8px' }}>
+              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--ink-40)', marginBottom: 10 }}>
+                Isi cucian — centang saat pengambilan
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: 12 }}>
+                {items.map((it, i) => (
+                  <div key={i} className="tile" style={{ border: '1px solid var(--line)', borderRadius: 12, overflow: 'hidden', background: 'var(--bg)' }}>
+                    <div style={{ aspectRatio: '1 / 1' }}>
+                      <ClothingThumb color={it.color} category={it.category} photo={it.photo} size="sm" />
+                    </div>
+                    <div style={{ padding: '7px 9px 9px', display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span style={{ width: 14, height: 14, borderRadius: 3, border: '1.5px solid var(--ink-40)', flexShrink: 0, display: 'inline-block' }}></span>
+                      <span style={{ fontSize: 12, fontWeight: 600, lineHeight: 1.25, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{it.name}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* footer note */}
+            <div style={{ padding: '14px 22px', borderTop: '1px dashed var(--line)', fontSize: 11.5, color: 'var(--ink-40)', textAlign: 'center' }}>
+              Cocokkan daftar ini saat mengambil cucian · Dibuat dengan LemariKu
+            </div>
+          </div>
+
+          {/* actions */}
+          <div className="no-print" style={{ display: 'flex', gap: 10, marginTop: 16 }}>
+            <button
+              onClick={() => window.print()}
+              style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '14px', borderRadius: 14, border: 'none', cursor: 'pointer', background: 'var(--sage)', color: '#FAF6F0', fontSize: 14.5, fontWeight: 600, fontFamily: 'inherit', boxShadow: '0 8px 20px rgba(109,130,113,0.32)' }}
+            >
+              <Icon name="Printer" size={18} stroke={2} /> Cetak / Simpan PDF
+            </button>
+          </div>
+          <p className="no-print" style={{ textAlign: 'center', fontSize: 12, color: 'var(--ink-40)', marginTop: 18 }}>
+            Punya banyak pakaian? <a href="/" style={{ color: 'var(--sage)', fontWeight: 600, textDecoration: 'none' }}>Kelola lemarimu di LemariKu →</a>
+          </p>
+        </div>
+      );
+    }
+
+    function MetaRow({ label, value, strong, last }) {
+      return (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '11px 0', borderBottom: last ? 'none' : '1px solid var(--line)' }}>
+          <span style={{ fontSize: 12.5, color: 'var(--ink-40)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{label}</span>
+          <span style={{ fontSize: strong ? 16 : 14, fontWeight: strong ? 700 : 600, color: 'var(--ink)', textAlign: 'right' }}>{value}</span>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('share-root')).render(<ShareApp />);
+  </script>
+</body>
+</html>

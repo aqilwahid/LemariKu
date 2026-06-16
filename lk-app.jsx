@@ -141,8 +141,9 @@ function App({ session }) {
   }
 
   function handleDownload(batch) {
-    setReceiptBatch(null);
-    showToast("PDF tersimpan ke perangkat", "FileCheck");
+    // Struk sudah dirender ke #lk-print (portal). Buka dialog cetak browser —
+    // dari sana user bisa pilih "Simpan sebagai PDF".
+    window.print();
   }
 
   function handleCopy(link) {
@@ -198,6 +199,13 @@ function App({ session }) {
       <ShareModal batch={shareBatch} onClose={() => setShareBatch(null)} onCopy={handleCopy} onToast={showToast} />
       <AccountSheet open={accountOpen} email={userEmail} onClose={() => setAccountOpen(false)} onLogout={handleLogout} />
       <ItemDetailSheet item={detailItem} onClose={() => setDetailItem(null)} onDelete={handleDelete} onUploadPhoto={handleUploadPhoto} />
+
+      {/* Struk khusus cetak → portal ke #lk-print (di luar frame iOS) */}
+      {receiptBatch && typeof document !== "undefined" && document.getElementById("lk-print") &&
+        ReactDOM.createPortal(
+          <PrintReceipt batch={receiptBatch} itemsById={itemsById} />,
+          document.getElementById("lk-print")
+        )}
 
       <Toast toast={toast} />
     </div>
