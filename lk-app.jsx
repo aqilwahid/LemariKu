@@ -166,6 +166,7 @@ function App({ session }) {
         onAdd={handleAdd} onOpenAdd={() => setAddOpen(true)} onUploadPhoto={handleUploadPhoto}
         userEmail={userEmail} onOpenAccount={() => setAccountOpen(true)}
         onOpenDetail={setDetailItem}
+        onOpenAutoAdd={() => showToast('Fitur Otomatis segera hadir!', 'Sparkles')}
       />
     );
   } else if (screen === "kirim") {

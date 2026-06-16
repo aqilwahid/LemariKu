@@ -133,8 +133,9 @@ function PhotoTile({ photo, color, category, onPick, size = 'lg' }) {
 /* ════════════════════════════════════════════════════════════
    SCREEN 1 — LEMARIKU (wardrobe catalog)
 ════════════════════════════════════════════════════════════ */
-function Lemariku({ items, loading, onAdd, onOpenAdd, onUploadPhoto, userEmail, onOpenAccount, onOpenDetail }) {
+function Lemariku({ items, loading, onAdd, onOpenAdd, onUploadPhoto, userEmail, onOpenAccount, onOpenDetail, onOpenAutoAdd }) {
   const [cat, setCat] = useState('Semua');
+  const [fabOpen, setFabOpen] = useState(false);
   const list = items.filter((it) => cat === 'Semua' || it.category === cat);
 
   const dynamicCategories = React.useMemo(() => {
@@ -216,14 +217,65 @@ function Lemariku({ items, loading, onAdd, onOpenAdd, onUploadPhoto, userEmail, 
         )}
       </div>
 
-      {/* FAB */}
+      {/* FAB backdrop */}
+      {fabOpen && (
+        <div
+          className="absolute inset-0 z-[55]"
+          style={{ background: 'rgba(36,34,32,0.25)', animation: 'lk-backdrop 0.2s ease both' }}
+          onClick={() => setFabOpen(false)}
+        ></div>
+      )}
+
+      {/* FAB menu options */}
+      {fabOpen && (
+        <div className="absolute z-[60]" style={{ right: 20, bottom: 172 }}>
+          {/* Otomatis option */}
+          <button
+            onClick={() => { setFabOpen(false); onOpenAutoAdd && onOpenAutoAdd(); }}
+            className="flex items-center gap-3 transition-all active:scale-95"
+            style={{
+              marginBottom: 12,
+              animation: 'lk-fab-item-in 0.28s cubic-bezier(0.22,0.61,0.36,1) 0.04s both',
+            }}
+          >
+            <span style={{ fontSize: 14, fontWeight: 600, color: '#FAF6F0', textShadow: '0 1px 4px rgba(0,0,0,0.25)', whiteSpace: 'nowrap' }}>Otomatis</span>
+            <span
+              className="flex items-center justify-center rounded-full"
+              style={{ width: 46, height: 46, background: 'var(--ink)', color: '#FAF6F0', boxShadow: '0 6px 18px rgba(44,42,41,0.35)' }}
+            >
+              <Icon name="Sparkles" size={22} stroke={2} />
+            </span>
+          </button>
+
+          {/* Manual option */}
+          <button
+            onClick={() => { setFabOpen(false); onOpenAdd(); }}
+            className="flex items-center gap-3 transition-all active:scale-95"
+            style={{
+              animation: 'lk-fab-item-in 0.28s cubic-bezier(0.22,0.61,0.36,1) 0s both',
+            }}
+          >
+            <span style={{ fontSize: 14, fontWeight: 600, color: '#FAF6F0', textShadow: '0 1px 4px rgba(0,0,0,0.25)', whiteSpace: 'nowrap' }}>Manual</span>
+            <span
+              className="flex items-center justify-center rounded-full"
+              style={{ width: 46, height: 46, background: 'var(--sage)', color: '#FAF6F0', boxShadow: '0 6px 18px rgba(109,130,113,0.35)' }}
+            >
+              <Icon name="PenLine" size={21} stroke={2} />
+            </span>
+          </button>
+        </div>
+      )}
+
+      {/* FAB main button */}
       <button
-        onClick={onOpenAdd}
+        onClick={() => setFabOpen((prev) => !prev)}
         className="absolute z-[60] flex items-center justify-center rounded-full transition-transform active:scale-90"
         style={{
           right: 20, bottom: 104, width: 58, height: 58,
           background: 'var(--sage)', color: '#FAF6F0',
           boxShadow: '0 10px 26px rgba(109,130,113,0.45)',
+          transition: 'transform 0.3s cubic-bezier(0.22,0.61,0.36,1)',
+          transform: fabOpen ? 'rotate(45deg)' : 'rotate(0deg)',
         }}
         aria-label="Tambah Pakaian"
       >
