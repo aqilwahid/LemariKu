@@ -133,7 +133,7 @@ function PhotoTile({ photo, color, category, onPick, size = 'lg' }) {
 /* ════════════════════════════════════════════════════════════
    SCREEN 1 — LEMARIKU (wardrobe catalog)
 ════════════════════════════════════════════════════════════ */
-function Lemariku({ items, loading, onAdd, onOpenAdd, onUploadPhoto, userEmail, onOpenAccount }) {
+function Lemariku({ items, loading, onAdd, onOpenAdd, onUploadPhoto, userEmail, onOpenAccount, onOpenDetail }) {
   const [cat, setCat] = useState('Semua');
   const list = items.filter((it) => cat === 'Semua' || it.category === cat);
 
@@ -198,10 +198,11 @@ function Lemariku({ items, loading, onAdd, onOpenAdd, onUploadPhoto, userEmail, 
             {list.map((it, idx) => (
               <div
                 key={it.id}
-                className="overflow-hidden rounded-2xl"
-                style={{ background: 'var(--card)', border: '1px solid rgba(44,42,41,0.05)' }}
+                className="overflow-hidden rounded-2xl transition-transform active:scale-[0.97]"
+                style={{ background: 'var(--card)', border: '1px solid rgba(44,42,41,0.05)', cursor: 'pointer' }}
+                onClick={() => onOpenDetail && onOpenDetail(it)}
               >
-                <div style={{ aspectRatio: '1 / 1' }}>
+                <div style={{ aspectRatio: '1 / 1' }} onClick={(e) => e.stopPropagation()}>
                   <PhotoTile photo={it.photo} color={it.color} category={it.category} onPick={(url) => onUploadPhoto(it.id, url)} />
                 </div>
                 <div style={{ padding: '11px 12px 13px' }}>
@@ -672,7 +673,103 @@ function ShareModal({ batch, onClose, onCopy, onToast }) {
   );
 }
 
+/* ─── Item detail / delete bottom sheet ─── */
+function ItemDetailSheet({ item, onClose, onDelete, onUploadPhoto }) {
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  useEffect(() => {
+    if (item) { setConfirmDelete(false); setDeleting(false); }
+  }, [item]);
+
+  if (!item) return null;
+
+  async function handleDelete() {
+    if (!confirmDelete) { setConfirmDelete(true); return; }
+    setDeleting(true);
+    try { await onDelete(item.id); } catch (e) { setDeleting(false); }
+  }
+
+  const isWashing = item.status === STATUS.CUCI;
+
+  return (
+    <Sheet open={!!item} onClose={onClose} maxH="78%">
+      <div style={{ padding: '8px 22px 30px' }}>
+        <div className="flex items-center justify-between" style={{ marginBottom: 18 }}>
+          <h2 className="font-serif" style={{ fontSize: 26, color: 'var(--ink)' }}>Detail Pakaian</h2>
+          <button onClick={onClose} className="flex items-center justify-center rounded-full" style={{ width: 34, height: 34, background: 'var(--card)', color: 'var(--ink-60)' }}>
+            <Icon name="X" size={18} stroke={2} />
+          </button>
+        </div>
+
+        {/* Item preview card */}
+        <div className="overflow-hidden rounded-2xl" style={{ background: 'var(--card)', border: '1px solid rgba(44,42,41,0.05)', marginBottom: 20 }}>
+          <div style={{ aspectRatio: '16 / 10' }}>
+            <PhotoTile photo={item.photo} color={item.color} category={item.category} onPick={(url) => onUploadPhoto(item.id, url)} />
+          </div>
+          <div style={{ padding: '14px 16px 16px' }}>
+            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--ink-40)' }}>{item.category}</div>
+            <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--ink)', marginTop: 4 }}>{item.name}</div>
+            <div className="flex items-center gap-3" style={{ marginTop: 10 }}>
+              <StatusTag status={item.status} />
+              <div className="flex items-center gap-1.5" style={{ fontSize: 12, color: 'var(--ink-40)' }}>
+                <span className="rounded-full" style={{ width: 16, height: 16, background: (FABRIC[item.color] || FABRIC.oat).fill, border: '1px solid rgba(0,0,0,0.08)', display: 'inline-block', flexShrink: 0 }}></span>
+                {(FABRIC[item.color] || FABRIC.oat).label}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Delete button */}
+        {isWashing ? (
+          <div className="flex items-center gap-2.5 rounded-2xl" style={{ padding: '14px 16px', background: 'rgba(109,130,113,0.08)', color: 'var(--ink-60)', fontSize: 13.5 }}>
+            <Icon name="Info" size={18} stroke={2} />
+            <span>Pakaian sedang dicuci — tidak bisa dihapus sampai selesai.</span>
+          </div>
+        ) : (
+          <div>
+            {confirmDelete ? (
+              <div className="animate-fade-up" style={{ background: 'rgba(180,69,60,0.06)', borderRadius: 18, padding: '16px 18px', border: '1px solid rgba(180,69,60,0.15)' }}>
+                <p style={{ fontSize: 14.5, color: '#8a3530', fontWeight: 600, marginBottom: 4 }}>Hapus "{item.name}"?</p>
+                <p style={{ fontSize: 13, color: 'var(--ink-60)', lineHeight: 1.5, marginBottom: 14 }}>Pakaian ini akan dihapus permanen dari lemarimu dan tidak bisa dikembalikan.</p>
+                <div className="flex gap-2.5">
+                  <button
+                    onClick={handleDelete}
+                    disabled={deleting}
+                    className="flex flex-1 items-center justify-center gap-2 rounded-xl font-semibold transition-all active:scale-95"
+                    style={{ padding: '13px', fontSize: 14, background: '#b4453c', color: '#fff', opacity: deleting ? 0.6 : 1 }}
+                  >
+                    <Icon name="Trash2" size={17} stroke={2} />
+                    {deleting ? 'Menghapus…' : 'Ya, Hapus'}
+                  </button>
+                  <button
+                    onClick={() => setConfirmDelete(false)}
+                    className="flex flex-1 items-center justify-center gap-2 rounded-xl font-semibold transition-all active:scale-95"
+                    style={{ padding: '13px', fontSize: 14, background: 'white', color: 'var(--ink)', border: '1px solid var(--line)' }}
+                  >
+                    Batal
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button
+                onClick={handleDelete}
+                className="flex w-full items-center justify-center gap-2 rounded-2xl font-semibold transition-all active:scale-[0.985]"
+                style={{ padding: '14px', fontSize: 15, background: 'white', color: '#b4453c', border: '1px solid rgba(180,69,60,0.2)' }}
+              >
+                <Icon name="Trash2" size={18} stroke={2} />
+                Hapus Pakaian
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+    </Sheet>
+  );
+}
+
 Object.assign(window, {
   ScreenShell, PrimaryButton, Sheet, Field, EmptyState, PhotoTile,
   Lemariku, AddItemSheet, KirimLaundry, StatusTracker, ReceiptModal, ShareModal,
+  ItemDetailSheet,
 });

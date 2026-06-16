@@ -21,6 +21,7 @@ function App({ session }) {
   const [receiptBatch, setReceiptBatch] = useState(null);
   const [shareBatch, setShareBatch] = useState(null);
   const [accountOpen, setAccountOpen] = useState(false);
+  const [detailItem, setDetailItem] = useState(null);
 
   // toast
   const [toast, setToast] = useState(null);
@@ -76,6 +77,19 @@ function App({ session }) {
     } catch (e) {
       setItems(snapshot); // balikkan jika gagal
       showToast("Gagal menyimpan foto", "TriangleAlert");
+    }
+  }
+
+  async function handleDelete(id) {
+    const item = items.find((it) => it.id === id);
+    try {
+      await LK_API.deleteItem(id);
+      setItems((prev) => prev.filter((it) => it.id !== id));
+      setDetailItem(null);
+      showToast(`"${item ? item.name : 'Item'}" dihapus dari lemari`, 'Trash2');
+    } catch (e) {
+      showToast('Gagal menghapus pakaian', 'TriangleAlert');
+      throw e;
     }
   }
 
@@ -151,6 +165,7 @@ function App({ session }) {
         items={items} loading={loading}
         onAdd={handleAdd} onOpenAdd={() => setAddOpen(true)} onUploadPhoto={handleUploadPhoto}
         userEmail={userEmail} onOpenAccount={() => setAccountOpen(true)}
+        onOpenDetail={setDetailItem}
       />
     );
   } else if (screen === "kirim") {
@@ -181,6 +196,7 @@ function App({ session }) {
       <ReceiptModal batch={receiptBatch} itemsById={itemsById} onClose={() => setReceiptBatch(null)} onDownload={handleDownload} />
       <ShareModal batch={shareBatch} onClose={() => setShareBatch(null)} onCopy={handleCopy} onToast={showToast} />
       <AccountSheet open={accountOpen} email={userEmail} onClose={() => setAccountOpen(false)} onLogout={handleLogout} />
+      <ItemDetailSheet item={detailItem} onClose={() => setDetailItem(null)} onDelete={handleDelete} onUploadPhoto={handleUploadPhoto} />
 
       <Toast toast={toast} />
     </div>

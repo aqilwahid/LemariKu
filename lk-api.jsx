@@ -86,6 +86,10 @@ const LK_API = {
     const { error } = await sb.from("items").update({ status }).in("id", ids);
     if (error) throw error;
   },
+  async deleteItem(id) {
+    const { error } = await sb.from("items").delete().eq("id", id);
+    if (error) throw error;
+  },
   async deleteBatch(id) {
     const { error } = await sb.from("batches").delete().eq("id", id);
     if (error) throw error;
