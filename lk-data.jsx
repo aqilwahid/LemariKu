@@ -186,22 +186,33 @@ function BottomNav({ active, onChange, washingCount }) {
             <button
               key={n.id}
               onClick={() => onChange(n.id)}
-              className="relative flex flex-1 flex-col items-center gap-1 transition-colors"
+              className="relative flex flex-1 flex-col items-center transition-colors active:scale-95"
               style={{ color: on ? 'var(--sage)' : 'var(--ink-40)' }}
+              aria-current={on ? 'page' : undefined}
             >
-              <span className="relative">
-                <Icon name={n.icon} size={23} stroke={on ? 2 : 1.6} />
-                {n.id === 'status' && washingCount > 0 && (
-                  <span
-                    className="absolute flex items-center justify-center rounded-full"
-                    style={{
-                      top: -5, right: -8, minWidth: 16, height: 16, padding: '0 4px',
-                      background: 'var(--sage)', color: '#fff', fontSize: 10, fontWeight: 700,
-                    }}
-                  >{washingCount}</span>
-                )}
+              <span
+                className="flex flex-col items-center gap-1"
+                style={{
+                  padding: '6px 18px',
+                  borderRadius: 16,
+                  background: on ? 'var(--sage-tint)' : 'transparent',
+                  transition: 'background 0.28s cubic-bezier(0.22,0.61,0.36,1)',
+                }}
+              >
+                <span className="relative">
+                  <Icon name={n.icon} size={23} stroke={on ? 2.2 : 1.6} />
+                  {n.id === 'status' && washingCount > 0 && (
+                    <span
+                      className="absolute flex items-center justify-center rounded-full"
+                      style={{
+                        top: -5, right: -8, minWidth: 16, height: 16, padding: '0 4px',
+                        background: 'var(--sage)', color: '#fff', fontSize: 10, fontWeight: 700,
+                      }}
+                    >{washingCount}</span>
+                  )}
+                </span>
+                <span style={{ fontSize: 11, fontWeight: on ? 700 : 500, letterSpacing: '0.01em' }}>{n.label}</span>
               </span>
-              <span style={{ fontSize: 11, fontWeight: on ? 600 : 500, letterSpacing: '0.01em' }}>{n.label}</span>
             </button>
           );
         })}

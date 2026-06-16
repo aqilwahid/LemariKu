@@ -514,10 +514,16 @@ function KirimLaundry({ items, selected, onToggle, vendor, setVendor, due, setDu
         )}
       </div>
 
-      {/* sticky counter + process */}
+      {/* sticky counter + process — muncul hanya saat ada pakaian dipilih */}
       <div
         className="absolute inset-x-0 z-[60]"
-        style={{ bottom: 92, padding: '0 18px' }}
+        style={{
+          bottom: 92, padding: '0 18px',
+          transform: count > 0 ? 'translateY(0)' : 'translateY(160%)',
+          opacity: count > 0 ? 1 : 0,
+          pointerEvents: count > 0 ? 'auto' : 'none',
+          transition: 'transform 0.36s cubic-bezier(0.22,0.61,0.36,1), opacity 0.26s ease',
+        }}
       >
         <div
           className="rounded-2xl"
@@ -525,7 +531,7 @@ function KirimLaundry({ items, selected, onToggle, vendor, setVendor, due, setDu
         >
           <div className="flex items-center justify-between" style={{ padding: '2px 6px 10px' }}>
             <div className="flex items-center gap-2.5">
-              <span className="flex items-center justify-center rounded-full font-bold" style={{ width: 30, height: 30, background: count ? 'var(--sage)' : 'rgba(44,42,41,0.10)', color: count ? '#fff' : 'var(--ink-40)', fontSize: 14 }}>{count}</span>
+              <span className="flex items-center justify-center rounded-full font-bold" style={{ width: 30, height: 30, background: 'var(--sage)', color: '#fff', fontSize: 14 }}>{count}</span>
               <span style={{ fontSize: 13.5, color: 'var(--ink)', fontWeight: 500 }}>pakaian dipilih untuk dicuci</span>
             </div>
           </div>
@@ -534,7 +540,7 @@ function KirimLaundry({ items, selected, onToggle, vendor, setVendor, due, setDu
           </PrimaryButton>
           {!canProcess && (
             <p style={{ fontSize: 11.5, color: 'var(--ink-40)', textAlign: 'center', marginTop: 9 }}>
-              {count === 0 ? 'Pilih minimal 1 pakaian' : 'Isi nama jasa laundry dulu'}
+              Isi nama jasa laundry dulu
             </p>
           )}
         </div>
