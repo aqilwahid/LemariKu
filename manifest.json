@@ -1,0 +1,16 @@
+{
+  "name": "LemariKu — Lemari & Laundry",
+  "short_name": "LemariKu",
+  "description": "Katalog lemari pakaian & pelacak laundry yang rapi.",
+  "lang": "id",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#FAF6F0",
+  "theme_color": "#FAF6F0",
+  "icons": [
+    { "src": "/logo.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/logo.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}
