@@ -190,7 +190,7 @@ function App({ session }) {
 
   return (
     <div className="relative h-full w-full overflow-hidden" style={{ background: "var(--bg)" }}>
-      <div key={screen} className="h-full">{body}</div>
+      <div key={screen} className="h-full lk-screen-in">{body}</div>
 
       <BottomNav active={screen} onChange={setScreen} washingCount={washingCount} />
 

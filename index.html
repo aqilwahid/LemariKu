@@ -92,9 +92,19 @@
   @keyframes lk-sheet-in { from { transform: translateY(100%); } to { transform: translateY(0); } }
   @keyframes lk-backdrop { from { opacity: 0; } to { opacity: 1; } }
   @keyframes lk-fab-item-in { from { opacity: 0; transform: translateY(18px) scale(0.9); } to { opacity: 1; transform: none; } }
+  @keyframes lk-screen-in { from { opacity: 0; } to { opacity: 1; } }
 
   .anim-fade-up { animation: lk-fade-up 0.45s cubic-bezier(0.22,0.61,0.36,1) both; }
   .anim-pop     { animation: lk-pop 0.3s cubic-bezier(0.22,0.61,0.36,1) both; }
+  /* alias: beberapa komponen memanggil nama gaya-Tailwind ini */
+  .animate-fade-up { animation: lk-fade-up 0.45s cubic-bezier(0.22,0.61,0.36,1) both; }
+  .animate-pop     { animation: lk-pop 0.3s cubic-bezier(0.22,0.61,0.36,1) both; }
+  /* transisi halus saat pindah tab (opacity saja → tidak menggeser elemen absolute) */
+  .lk-screen-in    { animation: lk-screen-in 0.34s ease both; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .animate-fade-up, .anim-fade-up, .animate-pop, .anim-pop, .lk-screen-in { animation: none !important; }
+  }
 
   @keyframes lk-spin { to { transform: rotate(360deg); } }
   .lk-spin { animation: lk-spin 0.8s linear infinite; }

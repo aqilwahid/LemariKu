@@ -193,14 +193,16 @@ function Lemariku({ items, loading, onAdd, onOpenAdd, onUploadPhoto, userEmail, 
             <div className="lk-spin" style={{ width: 30, height: 30, borderRadius: '50%', border: '3px solid var(--sage-tint)', borderTopColor: 'var(--sage)' }}></div>
           </div>
         ) : list.length === 0 ? (
-          <EmptyState icon="Shirt" title={items.length === 0 ? 'Lemari masih kosong' : 'Belum ada di kategori ini'} body="Tambahkan pakaian lewat tombol +" />
+          items.length === 0
+            ? <WardrobeOnboarding onStart={onOpenAdd} />
+            : <EmptyState icon="Shirt" title="Belum ada di kategori ini" body="Coba kategori lain, atau tambah pakaian baru lewat tombol +." />
         ) : (
           <div className="grid grid-cols-2 gap-3.5">
             {list.map((it, idx) => (
               <div
                 key={it.id}
-                className="overflow-hidden rounded-2xl transition-transform active:scale-[0.97]"
-                style={{ background: 'var(--card)', border: '1px solid rgba(44,42,41,0.05)', cursor: 'pointer' }}
+                className="overflow-hidden rounded-2xl transition-transform active:scale-[0.97] animate-fade-up"
+                style={{ background: 'var(--card)', border: '1px solid rgba(44,42,41,0.05)', cursor: 'pointer', animationDelay: `${Math.min(idx * 0.035, 0.32)}s` }}
                 onClick={() => onOpenDetail && onOpenDetail(it)}
               >
                 <div style={{ aspectRatio: '1 / 1' }} onClick={(e) => e.stopPropagation()}>
@@ -293,6 +295,54 @@ function EmptyState({ icon, title, body }) {
       </div>
       <h3 style={{ fontSize: 16, fontWeight: 600, color: 'var(--ink)', marginTop: 18 }}>{title}</h3>
       <p style={{ fontSize: 13.5, color: 'var(--ink-60)', marginTop: 6, maxWidth: 230, lineHeight: 1.5 }}>{body}</p>
+    </div>
+  );
+}
+
+/* Onboarding lemari kosong (kali pertama) — sambutan + alur 3 langkah */
+function WardrobeOnboarding({ onStart }) {
+  const steps = [
+    { icon: 'Shirt', title: 'Katalog pakaianmu', body: 'Foto & catat tiap pakaian biar lemari rapi.' },
+    { icon: 'Send', title: 'Kirim ke laundry', body: 'Pilih pakaian, catat jasa & estimasi selesai.' },
+    { icon: 'ClipboardCheck', title: 'Pantau statusnya', body: 'Lacak yang sedang dicuci sampai kembali.' },
+  ];
+  return (
+    <div className="animate-fade-up" style={{ padding: '12px 6px 0' }}>
+      <div className="flex flex-col items-center text-center" style={{ marginBottom: 22 }}>
+        <div className="flex items-center justify-center rounded-2xl" style={{ width: 66, height: 66, background: 'var(--sage-tint)', color: 'var(--sage)' }}>
+          <Icon name="Sparkles" size={30} stroke={1.6} />
+        </div>
+        <h3 className="font-serif" style={{ fontSize: 23, color: 'var(--ink)', marginTop: 16, lineHeight: 1.15 }}>Selamat datang di LemariKu</h3>
+        <p style={{ fontSize: 13.5, color: 'var(--ink-60)', marginTop: 7, maxWidth: 260, lineHeight: 1.55 }}>
+          Lemari digitalmu masih kosong. Yuk mulai dengan 3 langkah mudah:
+        </p>
+      </div>
+
+      <div className="flex flex-col gap-2.5" style={{ marginBottom: 22 }}>
+        {steps.map((s, i) => (
+          <div
+            key={s.title}
+            className="flex items-center gap-3.5 animate-fade-up"
+            style={{ background: 'var(--card)', borderRadius: 16, padding: '14px 15px', animationDelay: `${0.05 + i * 0.07}s` }}
+          >
+            <span className="flex items-center justify-center rounded-xl shrink-0" style={{ width: 42, height: 42, background: 'var(--bg)', color: 'var(--sage)' }}>
+              <Icon name={s.icon} size={20} stroke={1.8} />
+            </span>
+            <div style={{ minWidth: 0 }}>
+              <div className="flex items-center gap-2">
+                <span style={{ fontSize: 10.5, fontWeight: 700, color: 'var(--ink-40)' }}>{i + 1}</span>
+                <span style={{ fontSize: 14.5, fontWeight: 600, color: 'var(--ink)' }}>{s.title}</span>
+              </div>
+              <div style={{ fontSize: 12.5, color: 'var(--ink-60)', marginTop: 2, lineHeight: 1.4 }}>{s.body}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <PrimaryButton icon="Plus" onClick={onStart}>Tambah Pakaian Pertama</PrimaryButton>
+      <p style={{ fontSize: 12, color: 'var(--ink-40)', textAlign: 'center', marginTop: 10 }}>
+        Atau ketuk tombol <strong style={{ color: 'var(--ink-60)' }}>+</strong> di pojok kanan bawah kapan saja.
+      </p>
     </div>
   );
 }
