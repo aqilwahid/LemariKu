@@ -796,11 +796,12 @@ function PrintReceipt({ batch, itemsById }) {
       <table style={{ width: '100%', borderCollapse: 'collapse' }}>
         <thead>
           <tr>
-            <th style={{ ...head, width: 36, textAlign: 'center' }}>No</th>
+            <th style={{ ...head, width: 32, textAlign: 'center' }}>No</th>
+            <th style={{ ...head, width: 56, textAlign: 'center' }}>Foto</th>
             <th style={head}>Pakaian</th>
-            <th style={{ ...head, width: 120 }}>Kategori</th>
-            <th style={{ ...head, width: 110 }}>Warna</th>
-            <th style={{ ...head, width: 80, textAlign: 'center' }}>Diterima</th>
+            <th style={{ ...head, width: 110 }}>Kategori</th>
+            <th style={{ ...head, width: 100 }}>Warna</th>
+            <th style={{ ...head, width: 70, textAlign: 'center' }}>Diterima</th>
           </tr>
         </thead>
         <tbody>
@@ -809,6 +810,11 @@ function PrintReceipt({ batch, itemsById }) {
             return (
               <tr key={it.id}>
                 <td style={{ ...cell, textAlign: 'center', fontWeight: 700 }}>{i + 1}</td>
+                <td style={{ ...cell, padding: 5, textAlign: 'center' }}>
+                  <div style={{ width: 44, height: 44, margin: '0 auto', borderRadius: 6, overflow: 'hidden', border: '1px solid rgba(0,0,0,0.18)' }}>
+                    <ClothingThumb color={it.color} category={it.category} photo={it.photo} size="sm" />
+                  </div>
+                </td>
                 <td style={{ ...cell, fontWeight: 600 }}>{it.name}</td>
                 <td style={cell}>{it.category}</td>
                 <td style={cell}>
