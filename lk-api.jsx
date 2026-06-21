@@ -90,6 +90,15 @@ const LK_API = {
     const { error } = await sb.from("items").delete().eq("id", id);
     if (error) throw error;
   },
+  // Pindahkan semua pakaian dari satu nilai kategori/warna ke nilai lain
+  // (dipakai saat menghapus kategori/warna custom). RLS membatasi ke milik user.
+  async reassignItems(field, oldVal, newVal) {
+    if (field !== "category" && field !== "color") throw new Error("field tidak valid");
+    const patch = {};
+    patch[field] = newVal;
+    const { error } = await sb.from("items").update(patch).eq(field, oldVal);
+    if (error) throw error;
+  },
   async deleteBatch(id) {
     const { error } = await sb.from("batches").delete().eq("id", id);
     if (error) throw error;

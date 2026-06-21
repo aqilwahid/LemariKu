@@ -402,8 +402,87 @@ function ColorPicker({ items = [], value, onChange }) {
   );
 }
 
+/* Panel kelola/hapus kategori atau warna custom (dengan pemindahan pakaian).
+   kind: 'cat' | 'color'. onReassign(oldVal, newVal) memindah lalu menghapus. */
+function ManagePanel({ kind, items = [], onReassign, onClose }) {
+  const [removing, setRemoving] = useState(null);
+  const baseCats = ['Kaos', 'Kemeja', 'Celana', 'Jaket'];
+
+  const customs = React.useMemo(() => {
+    if (kind === 'cat') {
+      const cats = items.map(it => it.category).filter(Boolean);
+      return Array.from(new Set(cats)).filter(c => !baseCats.includes(c));
+    }
+    const cols = items.map(it => it.color).filter(c => typeof c === 'string' && c.charAt(0) === '#');
+    return Array.from(new Set(cols));
+  }, [items, kind]);
+
+  function countUsing(v) {
+    return items.filter(it => (kind === 'cat' ? it.category : it.color) === v).length;
+  }
+
+  const targets = React.useMemo(() => {
+    if (!removing) return [];
+    if (kind === 'cat') {
+      const all = Array.from(new Set([...baseCats, ...items.map(it => it.category).filter(Boolean)]));
+      return all.filter(c => c !== removing);
+    }
+    const all = Array.from(new Set([...COLOR_OPTIONS, ...items.map(it => it.color).filter(c => typeof c === 'string' && c.charAt(0) === '#')]));
+    return all.filter(c => c !== removing);
+  }, [removing, items, kind]);
+
+  return (
+    <div className="animate-fade-up" style={{ marginTop: 12, background: 'var(--card)', borderRadius: 16, padding: '14px 16px' }}>
+      <div className="flex items-center justify-between" style={{ marginBottom: 10 }}>
+        <span style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--ink-60)' }}>{kind === 'cat' ? 'Kelola kategori custom' : 'Kelola warna custom'}</span>
+        <button type="button" onClick={onClose} style={{ fontSize: 12.5, color: 'var(--sage)', fontWeight: 600 }}>Selesai</button>
+      </div>
+
+      {customs.length === 0 ? (
+        <p style={{ fontSize: 12.5, color: 'var(--ink-40)' }}>Belum ada {kind === 'cat' ? 'kategori' : 'warna'} custom untuk dihapus.</p>
+      ) : removing ? (
+        <div>
+          <p style={{ fontSize: 13, color: 'var(--ink)', fontWeight: 600, marginBottom: 4 }}>
+            Pindahkan {countUsing(removing)} pakaian ke:
+          </p>
+          <p style={{ fontSize: 12, color: 'var(--ink-60)', marginBottom: 10 }}>
+            {kind === 'cat' ? <>Kategori "{removing}" lalu dihapus.</> : <>Warna ini lalu dihapus.</>}
+          </p>
+          <div className="flex flex-wrap gap-2" style={{ marginBottom: 12 }}>
+            {targets.map(t => kind === 'cat' ? (
+              <button key={t} type="button" onClick={() => { onReassign(removing, t); setRemoving(null); }} className="rounded-full active:scale-95" style={{ padding: '8px 14px', fontSize: 13, background: 'white', border: '1px solid var(--line)', color: 'var(--ink)' }}>{t}</button>
+            ) : (
+              <button key={t} type="button" onClick={() => { onReassign(removing, t); setRemoving(null); }} className="rounded-full active:scale-90" style={{ width: 32, height: 32, background: fabricOf(t).fill, boxShadow: 'inset 0 0 0 1px rgba(0,0,0,0.06)' }} aria-label={fabricOf(t).label} />
+            ))}
+          </div>
+          <button type="button" onClick={() => setRemoving(null)} className="rounded-xl font-semibold active:scale-95" style={{ padding: '8px 14px', fontSize: 12.5, background: 'white', border: '1px solid var(--line)', color: 'var(--ink-60)' }}>Batal</button>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-2">
+          {customs.map(c => (
+            <div key={c} className="flex items-center gap-2.5">
+              {kind === 'cat' ? (
+                <span style={{ flex: 1, fontSize: 13.5, color: 'var(--ink)', fontWeight: 600 }}>{c}</span>
+              ) : (
+                <span className="flex items-center gap-2" style={{ flex: 1, minWidth: 0 }}>
+                  <span style={{ width: 22, height: 22, borderRadius: 99, background: fabricOf(c).fill, border: '1px solid rgba(0,0,0,0.12)', flexShrink: 0 }} />
+                  <span style={{ fontSize: 12, color: 'var(--ink-60)' }} className="truncate">{c}</span>
+                </span>
+              )}
+              <span style={{ fontSize: 11.5, color: 'var(--ink-40)' }}>{countUsing(c)} pakaian</span>
+              <button type="button" onClick={() => setRemoving(c)} className="flex items-center justify-center rounded-lg active:scale-90" style={{ width: 30, height: 30, background: 'white', border: '1px solid rgba(180,69,60,0.25)', color: '#b4453c', flexShrink: 0 }} aria-label="Hapus">
+                <Icon name="Trash2" size={15} stroke={2} />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ─── Add item modal ─── */
-function AddItemSheet({ open, items = [], onClose, onSave }) {
+function AddItemSheet({ open, items = [], onClose, onSave, onReassignCategory, onReassignColor }) {
   const [name, setName] = useState('');
   const [cat, setCat] = useState('Kaos');
   const [color, setColor] = useState('sage');
@@ -413,6 +492,9 @@ function AddItemSheet({ open, items = [], onClose, onSave }) {
   const [isCustom, setIsCustom] = useState(false);
   const [customVal, setCustomVal] = useState('');
 
+  // kelola/hapus opsi: null | 'cat' | 'color'
+  const [managing, setManaging] = useState(null);
+
   const baseCats = ['Kaos', 'Kemeja', 'Celana', 'Jaket'];
   const allCats = React.useMemo(() => {
     const itemCats = items.map(it => it.category).filter(Boolean);
@@ -420,6 +502,18 @@ function AddItemSheet({ open, items = [], onClose, onSave }) {
     const extra = unique.filter(c => !baseCats.includes(c));
     return [...baseCats, ...extra];
   }, [items]);
+
+  const hasCustomCats = allCats.some(c => !baseCats.includes(c));
+  const hasCustomColors = items.some(it => typeof it.color === 'string' && it.color.charAt(0) === '#');
+
+  function reassignCat(oldV, newV) {
+    onReassignCategory && onReassignCategory(oldV, newV);
+    if (!isCustom && cat === oldV) setCat(newV);
+  }
+  function reassignColor(oldV, newV) {
+    onReassignColor && onReassignColor(oldV, newV);
+    if (color === oldV) setColor(newV);
+  }
 
   useEffect(() => {
     if (open) {
@@ -429,6 +523,7 @@ function AddItemSheet({ open, items = [], onClose, onSave }) {
       setPhoto(null);
       setIsCustom(false);
       setCustomVal('');
+      setManaging(null);
     }
   }, [open]);
 
@@ -505,10 +600,35 @@ function AddItemSheet({ open, items = [], onClose, onSave }) {
                 />
               </div>
             )}
+
+            {hasCustomCats && (
+              <button
+                type="button" onClick={() => setManaging((m) => (m === 'cat' ? null : 'cat'))}
+                className="active:scale-95"
+                style={{ display: 'block', marginTop: 12, fontSize: 12.5, fontWeight: 600, color: 'var(--sage)' }}
+              >
+                {managing === 'cat' ? 'Tutup kelola' : 'Kelola / hapus kategori'}
+              </button>
+            )}
+            {managing === 'cat' && (
+              <ManagePanel kind="cat" items={items} onReassign={reassignCat} onClose={() => setManaging(null)} />
+            )}
           </Field>
 
           <Field label="Warna Kain" hint="Ketuk + untuk warna khusus">
             <ColorPicker items={items} value={color} onChange={setColor} />
+            {hasCustomColors && (
+              <button
+                type="button" onClick={() => setManaging((m) => (m === 'color' ? null : 'color'))}
+                className="active:scale-95"
+                style={{ display: 'block', marginTop: 12, fontSize: 12.5, fontWeight: 600, color: 'var(--sage)' }}
+              >
+                {managing === 'color' ? 'Tutup kelola' : 'Kelola / hapus warna'}
+              </button>
+            )}
+            {managing === 'color' && (
+              <ManagePanel kind="color" items={items} onReassign={reassignColor} onClose={() => setManaging(null)} />
+            )}
           </Field>
         </div>
 

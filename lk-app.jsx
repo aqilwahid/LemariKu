@@ -94,6 +94,32 @@ function App({ session }) {
     }
   }
 
+  async function handleReassignCategory(oldVal, newVal) {
+    if (oldVal === newVal) return;
+    const snapshot = items;
+    setItems((prev) => prev.map((it) => (it.category === oldVal ? { ...it, category: newVal } : it))); // optimistik
+    try {
+      await LK_API.reassignItems("category", oldVal, newVal);
+      showToast(`Kategori "${oldVal}" dihapus`, "Trash2");
+    } catch (e) {
+      setItems(snapshot);
+      showToast("Gagal menghapus kategori", "TriangleAlert");
+    }
+  }
+
+  async function handleReassignColor(oldVal, newVal) {
+    if (oldVal === newVal) return;
+    const snapshot = items;
+    setItems((prev) => prev.map((it) => (it.color === oldVal ? { ...it, color: newVal } : it))); // optimistik
+    try {
+      await LK_API.reassignItems("color", oldVal, newVal);
+      showToast("Warna dihapus", "Trash2");
+    } catch (e) {
+      setItems(snapshot);
+      showToast("Gagal menghapus warna", "TriangleAlert");
+    }
+  }
+
   async function handleDelete(id) {
     const item = items.find((it) => it.id === id);
     try {
@@ -208,7 +234,7 @@ function App({ session }) {
 
       <BottomNav active={screen} onChange={setScreen} washingCount={washingCount} />
 
-      <AddItemSheet open={addOpen} items={items} onClose={() => setAddOpen(false)} onSave={handleAdd} />
+      <AddItemSheet open={addOpen} items={items} onClose={() => setAddOpen(false)} onSave={handleAdd} onReassignCategory={handleReassignCategory} onReassignColor={handleReassignColor} />
       <ReceiptModal batch={receiptBatch} itemsById={itemsById} onClose={() => setReceiptBatch(null)} onDownload={handleDownload} />
       <ShareModal batch={shareBatch} onClose={() => setShareBatch(null)} onCopy={handleCopy} onToast={showToast} />
       <AccountSheet open={accountOpen} email={userEmail} onClose={() => setAccountOpen(false)} onLogout={handleLogout} />
