@@ -75,11 +75,20 @@ const SEED_ITEMS = [
 
 const COLOR_OPTIONS = Object.keys(FABRIC);
 
+/* Resolusi warna: nama preset (sage, oat, …) ATAU hex custom (#A1B2C3).
+   Dipakai di semua tempat agar warna custom ikut ter-render konsisten. */
+function fabricOf(color) {
+  if (typeof color === 'string' && color.charAt(0) === '#') {
+    return { fill: color, label: 'Khusus' };
+  }
+  return FABRIC[color] || FABRIC.oat;
+}
+
 /* ────────────────────────────────────────────────────────────
    ClothingThumb — colour-blocked fabric tile (visual recall)
 ──────────────────────────────────────────────────────────── */
 function ClothingThumb({ color, category, photo, size = 'lg' }) {
-  const fab = FABRIC[color] || FABRIC.oat;
+  const fab = fabricOf(color);
   const iconName = CAT_ICON[category] || 'Shirt';
   const iconSize = size === 'sm' ? 22 : 40;
   if (photo) {
@@ -260,4 +269,5 @@ function todayISO() { return new Date().toISOString().slice(0, 10); }
 Object.assign(window, {
   Icon, FABRIC, CATEGORIES, CAT_ICON, STATUS, SEED_ITEMS, COLOR_OPTIONS, uid,
   ClothingThumb, StatusTag, Toast, BottomNav, NAV, fmtDate, fmtShort, todayISO, fileToScaledDataURL,
+  fabricOf,
 });

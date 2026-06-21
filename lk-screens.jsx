@@ -358,12 +358,24 @@ function AddItemSheet({ open, items = [], onClose, onSave }) {
   const [isCustom, setIsCustom] = useState(false);
   const [customVal, setCustomVal] = useState('');
 
+  // Custom color (hex) picker
+  const colorPickerRef = useRef(null);
+
   const baseCats = ['Kaos', 'Kemeja', 'Celana', 'Jaket'];
   const allCats = React.useMemo(() => {
     const itemCats = items.map(it => it.category).filter(Boolean);
     const unique = Array.from(new Set(itemCats));
     const extra = unique.filter(c => !baseCats.includes(c));
     return [...baseCats, ...extra];
+  }, [items]);
+
+  // Warna preset + warna custom (hex) yang pernah dipakai di lemari
+  const allColors = React.useMemo(() => {
+    const customs = items
+      .map(it => it.color)
+      .filter(c => typeof c === 'string' && c.charAt(0) === '#');
+    const uniqueCustoms = Array.from(new Set(customs)).filter(c => !COLOR_OPTIONS.includes(c));
+    return [...COLOR_OPTIONS, ...uniqueCustoms];
   }, [items]);
 
   useEffect(() => {
@@ -452,24 +464,44 @@ function AddItemSheet({ open, items = [], onClose, onSave }) {
             )}
           </Field>
 
-          <Field label="Warna Kain">
+          <Field label="Warna Kain" hint="Ketuk + untuk warna khusus">
             <div className="flex flex-wrap gap-2.5">
-              {COLOR_OPTIONS.map((c) => {
+              {(allColors.includes(color) ? allColors : [...allColors, color]).map((c) => {
                 const on = color === c;
                 return (
                   <button
-                    key={c} onClick={() => setColor(c)}
+                    key={c} type="button" onClick={() => setColor(c)}
                     className="relative rounded-full transition-transform active:scale-90"
                     style={{
-                      width: 34, height: 34, background: FABRIC[c].fill,
+                      width: 34, height: 34, background: fabricOf(c).fill,
                       boxShadow: on ? '0 0 0 2px var(--bg), 0 0 0 4px var(--ink)' : 'inset 0 0 0 1px rgba(0,0,0,0.06)',
                     }}
-                    aria-label={FABRIC[c].label}
+                    aria-label={fabricOf(c).label}
                   >
                     {on && <span className="absolute inset-0 flex items-center justify-center" style={{ color: '#fff' }}><Icon name="Check" size={16} stroke={2.5} /></span>}
                   </button>
                 );
               })}
+
+              {/* tombol tambah warna khusus → color picker bawaan */}
+              <button
+                type="button"
+                onClick={() => colorPickerRef.current && colorPickerRef.current.click()}
+                className="relative flex items-center justify-center rounded-full transition-transform active:scale-90"
+                style={{ width: 34, height: 34, background: 'white', border: '1px dashed var(--ink-40)', color: 'var(--ink-60)' }}
+                aria-label="Tambah warna khusus"
+              >
+                <Icon name="Plus" size={16} stroke={2.4} />
+              </button>
+              <input
+                ref={colorPickerRef}
+                type="color"
+                value={color.charAt(0) === '#' ? color : '#9DAE96'}
+                onChange={(e) => setColor(e.target.value)}
+                style={{ position: 'absolute', width: 0, height: 0, opacity: 0, pointerEvents: 'none' }}
+                tabIndex={-1}
+                aria-hidden="true"
+              />
             </div>
           </Field>
         </div>
@@ -806,7 +838,7 @@ function PrintReceipt({ batch, itemsById }) {
         </thead>
         <tbody>
           {its.map((it, i) => {
-            const fab = FABRIC[it.color] || FABRIC.oat;
+            const fab = fabricOf(it.color);
             return (
               <tr key={it.id}>
                 <td style={{ ...cell, textAlign: 'center', fontWeight: 700 }}>{i + 1}</td>
@@ -960,8 +992,8 @@ function ItemDetailSheet({ item, onClose, onDelete, onUploadPhoto }) {
             <div className="flex items-center gap-3" style={{ marginTop: 10 }}>
               <StatusTag status={item.status} />
               <div className="flex items-center gap-1.5" style={{ fontSize: 12, color: 'var(--ink-40)' }}>
-                <span className="rounded-full" style={{ width: 16, height: 16, background: (FABRIC[item.color] || FABRIC.oat).fill, border: '1px solid rgba(0,0,0,0.08)', display: 'inline-block', flexShrink: 0 }}></span>
-                {(FABRIC[item.color] || FABRIC.oat).label}
+                <span className="rounded-full" style={{ width: 16, height: 16, background: fabricOf(item.color).fill, border: '1px solid rgba(0,0,0,0.08)', display: 'inline-block', flexShrink: 0 }}></span>
+                {fabricOf(item.color).label}
               </div>
             </div>
           </div>
