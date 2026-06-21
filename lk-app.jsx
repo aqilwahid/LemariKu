@@ -80,6 +80,20 @@ function App({ session }) {
     }
   }
 
+  async function handleUpdateItem(id, patch) {
+    const snapshot = items;
+    setItems((prev) => prev.map((it) => (it.id === id ? { ...it, ...patch } : it))); // optimistik
+    try {
+      await LK_API.updateItem(id, patch);
+      setDetailItem(null);
+      showToast("Pakaian diperbarui", "Check");
+    } catch (e) {
+      setItems(snapshot); // balikkan jika gagal
+      showToast("Gagal memperbarui pakaian", "TriangleAlert");
+      throw e;
+    }
+  }
+
   async function handleDelete(id) {
     const item = items.find((it) => it.id === id);
     try {
@@ -198,7 +212,7 @@ function App({ session }) {
       <ReceiptModal batch={receiptBatch} itemsById={itemsById} onClose={() => setReceiptBatch(null)} onDownload={handleDownload} />
       <ShareModal batch={shareBatch} onClose={() => setShareBatch(null)} onCopy={handleCopy} onToast={showToast} />
       <AccountSheet open={accountOpen} email={userEmail} onClose={() => setAccountOpen(false)} onLogout={handleLogout} />
-      <ItemDetailSheet item={detailItem} onClose={() => setDetailItem(null)} onDelete={handleDelete} onUploadPhoto={handleUploadPhoto} />
+      <ItemDetailSheet item={detailItem} items={items} onClose={() => setDetailItem(null)} onDelete={handleDelete} onUploadPhoto={handleUploadPhoto} onUpdate={handleUpdateItem} />
 
       {/* Struk khusus cetak → portal ke #lk-print (di luar frame iOS) */}
       {receiptBatch && typeof document !== "undefined" && document.getElementById("lk-print") &&

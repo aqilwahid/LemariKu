@@ -347,6 +347,61 @@ function WardrobeOnboarding({ onStart }) {
   );
 }
 
+/* Pemilih warna kain — preset + warna custom (hex) + tombol color picker.
+   Dipakai bersama oleh form Tambah & Edit pakaian. */
+function ColorPicker({ items = [], value, onChange }) {
+  const pickerRef = useRef(null);
+  const allColors = React.useMemo(() => {
+    const customs = items
+      .map(it => it.color)
+      .filter(c => typeof c === 'string' && c.charAt(0) === '#');
+    const uniqueCustoms = Array.from(new Set(customs)).filter(c => !COLOR_OPTIONS.includes(c));
+    return [...COLOR_OPTIONS, ...uniqueCustoms];
+  }, [items]);
+  const palette = allColors.includes(value) ? allColors : [...allColors, value].filter(Boolean);
+
+  return (
+    <div className="flex flex-wrap gap-2.5">
+      {palette.map((c) => {
+        const on = value === c;
+        return (
+          <button
+            key={c} type="button" onClick={() => onChange(c)}
+            className="relative rounded-full transition-transform active:scale-90"
+            style={{
+              width: 34, height: 34, background: fabricOf(c).fill,
+              boxShadow: on ? '0 0 0 2px var(--bg), 0 0 0 4px var(--ink)' : 'inset 0 0 0 1px rgba(0,0,0,0.06)',
+            }}
+            aria-label={fabricOf(c).label}
+          >
+            {on && <span className="absolute inset-0 flex items-center justify-center" style={{ color: '#fff' }}><Icon name="Check" size={16} stroke={2.5} /></span>}
+          </button>
+        );
+      })}
+
+      {/* tambah warna khusus → color picker bawaan */}
+      <button
+        type="button"
+        onClick={() => pickerRef.current && pickerRef.current.click()}
+        className="relative flex items-center justify-center rounded-full transition-transform active:scale-90"
+        style={{ width: 34, height: 34, background: 'white', border: '1px dashed var(--ink-40)', color: 'var(--ink-60)' }}
+        aria-label="Tambah warna khusus"
+      >
+        <Icon name="Plus" size={16} stroke={2.4} />
+      </button>
+      <input
+        ref={pickerRef}
+        type="color"
+        value={(value || '').charAt(0) === '#' ? value : '#9DAE96'}
+        onChange={(e) => onChange(e.target.value)}
+        style={{ position: 'absolute', width: 0, height: 0, opacity: 0, pointerEvents: 'none' }}
+        tabIndex={-1}
+        aria-hidden="true"
+      />
+    </div>
+  );
+}
+
 /* ─── Add item modal ─── */
 function AddItemSheet({ open, items = [], onClose, onSave }) {
   const [name, setName] = useState('');
@@ -358,24 +413,12 @@ function AddItemSheet({ open, items = [], onClose, onSave }) {
   const [isCustom, setIsCustom] = useState(false);
   const [customVal, setCustomVal] = useState('');
 
-  // Custom color (hex) picker
-  const colorPickerRef = useRef(null);
-
   const baseCats = ['Kaos', 'Kemeja', 'Celana', 'Jaket'];
   const allCats = React.useMemo(() => {
     const itemCats = items.map(it => it.category).filter(Boolean);
     const unique = Array.from(new Set(itemCats));
     const extra = unique.filter(c => !baseCats.includes(c));
     return [...baseCats, ...extra];
-  }, [items]);
-
-  // Warna preset + warna custom (hex) yang pernah dipakai di lemari
-  const allColors = React.useMemo(() => {
-    const customs = items
-      .map(it => it.color)
-      .filter(c => typeof c === 'string' && c.charAt(0) === '#');
-    const uniqueCustoms = Array.from(new Set(customs)).filter(c => !COLOR_OPTIONS.includes(c));
-    return [...COLOR_OPTIONS, ...uniqueCustoms];
   }, [items]);
 
   useEffect(() => {
@@ -465,44 +508,7 @@ function AddItemSheet({ open, items = [], onClose, onSave }) {
           </Field>
 
           <Field label="Warna Kain" hint="Ketuk + untuk warna khusus">
-            <div className="flex flex-wrap gap-2.5">
-              {(allColors.includes(color) ? allColors : [...allColors, color]).map((c) => {
-                const on = color === c;
-                return (
-                  <button
-                    key={c} type="button" onClick={() => setColor(c)}
-                    className="relative rounded-full transition-transform active:scale-90"
-                    style={{
-                      width: 34, height: 34, background: fabricOf(c).fill,
-                      boxShadow: on ? '0 0 0 2px var(--bg), 0 0 0 4px var(--ink)' : 'inset 0 0 0 1px rgba(0,0,0,0.06)',
-                    }}
-                    aria-label={fabricOf(c).label}
-                  >
-                    {on && <span className="absolute inset-0 flex items-center justify-center" style={{ color: '#fff' }}><Icon name="Check" size={16} stroke={2.5} /></span>}
-                  </button>
-                );
-              })}
-
-              {/* tombol tambah warna khusus → color picker bawaan */}
-              <button
-                type="button"
-                onClick={() => colorPickerRef.current && colorPickerRef.current.click()}
-                className="relative flex items-center justify-center rounded-full transition-transform active:scale-90"
-                style={{ width: 34, height: 34, background: 'white', border: '1px dashed var(--ink-40)', color: 'var(--ink-60)' }}
-                aria-label="Tambah warna khusus"
-              >
-                <Icon name="Plus" size={16} stroke={2.4} />
-              </button>
-              <input
-                ref={colorPickerRef}
-                type="color"
-                value={color.charAt(0) === '#' ? color : '#9DAE96'}
-                onChange={(e) => setColor(e.target.value)}
-                style={{ position: 'absolute', width: 0, height: 0, opacity: 0, pointerEvents: 'none' }}
-                tabIndex={-1}
-                aria-hidden="true"
-              />
-            </div>
+            <ColorPicker items={items} value={color} onChange={setColor} />
           </Field>
         </div>
 
@@ -952,13 +958,37 @@ function ShareModal({ batch, onClose, onCopy, onToast }) {
   );
 }
 
-/* ─── Item detail / delete bottom sheet ─── */
-function ItemDetailSheet({ item, onClose, onDelete, onUploadPhoto }) {
+/* ─── Item detail / edit / delete bottom sheet ─── */
+function ItemDetailSheet({ item, items = [], onClose, onDelete, onUploadPhoto, onUpdate }) {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
+  // edit mode
+  const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [eName, setEName] = useState('');
+  const [eCat, setECat] = useState('');
+  const [eColor, setEColor] = useState('sage');
+  const [eIsCustom, setEIsCustom] = useState(false);
+  const [eCustomVal, setECustomVal] = useState('');
+
+  const baseCats = ['Kaos', 'Kemeja', 'Celana', 'Jaket'];
+  const allCats = React.useMemo(() => {
+    const itemCats = items.map(it => it.category).filter(Boolean);
+    const unique = Array.from(new Set(itemCats));
+    const extra = unique.filter(c => !baseCats.includes(c));
+    return [...baseCats, ...extra];
+  }, [items]);
+
   useEffect(() => {
-    if (item) { setConfirmDelete(false); setDeleting(false); }
+    if (item) {
+      setConfirmDelete(false); setDeleting(false);
+      setEditing(false); setSaving(false);
+      setEName(item.name || '');
+      setEColor(item.color || 'sage');
+      setEIsCustom(false); setECustomVal('');
+      setECat(item.category || 'Kaos');
+    }
   }, [item]);
 
   if (!item) return null;
@@ -969,52 +999,137 @@ function ItemDetailSheet({ item, onClose, onDelete, onUploadPhoto }) {
     try { await onDelete(item.id); } catch (e) { setDeleting(false); }
   }
 
+  const resolvedCat = eIsCustom ? eCustomVal.trim() : eCat;
+  const validEdit = eName.trim().length > 0 && resolvedCat.length > 0;
+
+  async function handleSave() {
+    if (!validEdit) return;
+    setSaving(true);
+    try {
+      await onUpdate(item.id, { name: eName.trim(), category: resolvedCat, color: eColor });
+      // parent menutup sheet saat sukses
+    } catch (e) { setSaving(false); }
+  }
+
   const isWashing = item.status === STATUS.CUCI;
 
   return (
-    <Sheet open={!!item} onClose={onClose} maxH="78%">
+    <Sheet open={!!item} onClose={onClose} maxH="86%">
       <div style={{ padding: '8px 22px 30px' }}>
         <div className="flex items-center justify-between" style={{ marginBottom: 18 }}>
-          <h2 className="font-serif" style={{ fontSize: 26, color: 'var(--ink)' }}>Detail Pakaian</h2>
+          <h2 className="font-serif" style={{ fontSize: 26, color: 'var(--ink)' }}>{editing ? 'Ubah Pakaian' : 'Detail Pakaian'}</h2>
           <button onClick={onClose} className="flex items-center justify-center rounded-full" style={{ width: 34, height: 34, background: 'var(--card)', color: 'var(--ink-60)' }}>
             <Icon name="X" size={18} stroke={2} />
           </button>
         </div>
 
-        {/* Item preview card */}
-        <div className="overflow-hidden rounded-2xl" style={{ background: 'var(--card)', border: '1px solid rgba(44,42,41,0.05)', marginBottom: 20 }}>
+        {/* Foto (selalu bisa diganti) */}
+        <div className="overflow-hidden rounded-2xl" style={{ background: 'var(--card)', border: '1px solid rgba(44,42,41,0.05)', marginBottom: 18 }}>
           <div style={{ aspectRatio: '16 / 10' }}>
-            <PhotoTile photo={item.photo} color={item.color} category={item.category} onPick={(url) => onUploadPhoto(item.id, url)} />
+            <PhotoTile photo={item.photo} color={editing ? eColor : item.color} category={editing ? resolvedCat : item.category} onPick={(url) => onUploadPhoto(item.id, url)} />
           </div>
-          <div style={{ padding: '14px 16px 16px' }}>
-            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--ink-40)' }}>{item.category}</div>
-            <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--ink)', marginTop: 4 }}>{item.name}</div>
-            <div className="flex items-center gap-3" style={{ marginTop: 10 }}>
-              <StatusTag status={item.status} />
-              <div className="flex items-center gap-1.5" style={{ fontSize: 12, color: 'var(--ink-40)' }}>
-                <span className="rounded-full" style={{ width: 16, height: 16, background: fabricOf(item.color).fill, border: '1px solid rgba(0,0,0,0.08)', display: 'inline-block', flexShrink: 0 }}></span>
-                {fabricOf(item.color).label}
+          {!editing && (
+            <div style={{ padding: '14px 16px 16px' }}>
+              <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--ink-40)' }}>{item.category}</div>
+              <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--ink)', marginTop: 4 }}>{item.name}</div>
+              <div className="flex items-center gap-3" style={{ marginTop: 10 }}>
+                <StatusTag status={item.status} />
+                <div className="flex items-center gap-1.5" style={{ fontSize: 12, color: 'var(--ink-40)' }}>
+                  <span className="rounded-full" style={{ width: 16, height: 16, background: fabricOf(item.color).fill, border: '1px solid rgba(0,0,0,0.08)', display: 'inline-block', flexShrink: 0 }}></span>
+                  {fabricOf(item.color).label}
+                </div>
               </div>
             </div>
-          </div>
+          )}
         </div>
 
-        {/* Delete button */}
-        {isWashing ? (
-          <div className="flex items-center gap-2.5 rounded-2xl" style={{ padding: '14px 16px', background: 'rgba(109,130,113,0.08)', color: 'var(--ink-60)', fontSize: 13.5 }}>
-            <Icon name="Info" size={18} stroke={2} />
-            <span>Pakaian sedang dicuci — tidak bisa dihapus sampai selesai.</span>
+        {editing ? (
+          /* ── Form edit ── */
+          <div>
+            <div className="flex flex-col gap-[18px]">
+              <Field label="Nama Pakaian">
+                <input className={inputCls} style={inputStyle} value={eName} onChange={(e) => setEName(e.target.value)} placeholder="cth. Kemeja Linen Sage" />
+              </Field>
+
+              <Field label="Kategori">
+                <div className="flex flex-wrap gap-2">
+                  {allCats.map((c) => {
+                    const on = !eIsCustom && eCat === c;
+                    return (
+                      <button
+                        key={c} type="button" onClick={() => { setECat(c); setEIsCustom(false); }}
+                        className="rounded-full transition-all active:scale-95"
+                        style={{
+                          padding: '9px 16px', fontSize: 13.5, fontWeight: on ? 600 : 500,
+                          background: on ? 'var(--sage)' : 'white', color: on ? '#fff' : 'var(--ink-60)',
+                          border: on ? '1px solid var(--sage)' : '1px solid var(--line)',
+                        }}
+                      >{c}</button>
+                    );
+                  })}
+                  <button
+                    type="button" onClick={() => setEIsCustom(true)}
+                    className="rounded-full transition-all active:scale-95"
+                    style={{
+                      padding: '9px 16px', fontSize: 13.5, fontWeight: eIsCustom ? 600 : 500,
+                      background: eIsCustom ? 'var(--sage)' : 'white', color: eIsCustom ? '#fff' : 'var(--ink-60)',
+                      border: eIsCustom ? '1px solid var(--sage)' : '1px solid var(--line)',
+                    }}
+                  >+ Kategori Baru</button>
+                </div>
+                {eIsCustom && (
+                  <div style={{ marginTop: 12 }}>
+                    <input className={inputCls} style={inputStyle} value={eCustomVal} onChange={(e) => setECustomVal(e.target.value)} placeholder="Tulis kategori baru..." autoFocus />
+                  </div>
+                )}
+              </Field>
+
+              <Field label="Warna Kain" hint="Ketuk + untuk warna khusus">
+                <ColorPicker items={items} value={eColor} onChange={setEColor} />
+              </Field>
+            </div>
+
+            <div className="flex gap-2.5" style={{ marginTop: 24 }}>
+              <button
+                onClick={handleSave} disabled={!validEdit || saving}
+                className="flex flex-1 items-center justify-center gap-2 rounded-2xl font-semibold transition-all active:scale-[0.985]"
+                style={{ padding: '14px', fontSize: 15, background: (!validEdit || saving) ? 'rgba(44,42,41,0.10)' : 'var(--sage)', color: (!validEdit || saving) ? 'var(--ink-40)' : '#FAF6F0', boxShadow: (!validEdit || saving) ? 'none' : '0 8px 20px rgba(109,130,113,0.32)' }}
+              >
+                <Icon name="Check" size={18} stroke={2} />
+                {saving ? 'Menyimpan…' : 'Simpan Perubahan'}
+              </button>
+              <button
+                onClick={() => setEditing(false)} disabled={saving}
+                className="flex items-center justify-center rounded-2xl font-semibold transition-all active:scale-95"
+                style={{ padding: '14px 18px', fontSize: 15, background: 'white', color: 'var(--ink)', border: '1px solid var(--line)' }}
+              >
+                Batal
+              </button>
+            </div>
           </div>
         ) : (
-          <div>
-            {confirmDelete ? (
+          /* ── Aksi: Ubah + Hapus ── */
+          <div className="flex flex-col gap-2.5">
+            <button
+              onClick={() => setEditing(true)}
+              className="flex w-full items-center justify-center gap-2 rounded-2xl font-semibold transition-all active:scale-[0.985]"
+              style={{ padding: '14px', fontSize: 15, background: 'var(--ink)', color: '#FAF6F0' }}
+            >
+              <Icon name="PenLine" size={18} stroke={2} /> Ubah Pakaian
+            </button>
+
+            {isWashing ? (
+              <div className="flex items-center gap-2.5 rounded-2xl" style={{ padding: '14px 16px', background: 'rgba(109,130,113,0.08)', color: 'var(--ink-60)', fontSize: 13.5 }}>
+                <Icon name="Info" size={18} stroke={2} />
+                <span>Pakaian sedang dicuci — tidak bisa dihapus sampai selesai.</span>
+              </div>
+            ) : confirmDelete ? (
               <div className="animate-fade-up" style={{ background: 'rgba(180,69,60,0.06)', borderRadius: 18, padding: '16px 18px', border: '1px solid rgba(180,69,60,0.15)' }}>
                 <p style={{ fontSize: 14.5, color: '#8a3530', fontWeight: 600, marginBottom: 4 }}>Hapus "{item.name}"?</p>
                 <p style={{ fontSize: 13, color: 'var(--ink-60)', lineHeight: 1.5, marginBottom: 14 }}>Pakaian ini akan dihapus permanen dari lemarimu dan tidak bisa dikembalikan.</p>
                 <div className="flex gap-2.5">
                   <button
-                    onClick={handleDelete}
-                    disabled={deleting}
+                    onClick={handleDelete} disabled={deleting}
                     className="flex flex-1 items-center justify-center gap-2 rounded-xl font-semibold transition-all active:scale-95"
                     style={{ padding: '13px', fontSize: 14, background: '#b4453c', color: '#fff', opacity: deleting ? 0.6 : 1 }}
                   >
