@@ -18,7 +18,7 @@ const _authInput = {
 };
 
 function AuthScreen() {
-  const [mode, setMode] = useState("login"); // 'login' | 'signup'
+  const [mode, setMode] = useState("login"); // 'login' | 'signup' | 'forgot'
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
@@ -26,10 +26,16 @@ function AuthScreen() {
   const [info, setInfo] = useState("");
 
   const isSignup = mode === "signup";
-  const valid = /\S+@\S+\.\S+/.test(email) && password.length >= 6;
+  const isForgot = mode === "forgot";
+  const validEmail = /\S+@\S+\.\S+/.test(email);
+  const validPassword = password.length >= 6;
+  const valid = isForgot ? validEmail : validEmail && validPassword;
 
   function switchMode(m) {
     setMode(m); setErr(""); setInfo("");
+    if (m !== "forgot") {
+      setPassword("");
+    }
   }
 
   async function submit() {
@@ -44,6 +50,14 @@ function AuthScreen() {
           /* auto-confirmed → onAuthChange di Root memindahkan ke aplikasi */
         } else {
           setInfo("Akun dibuat. Jika diminta, cek email untuk verifikasi, lalu Masuk.");
+          setMode("login");
+        }
+      } else if (isForgot) {
+        const { error } = await LK_API.resetPasswordEmail(email.trim());
+        if (error) {
+          setErr(_authFriendly(error));
+        } else {
+          setInfo("Link reset password telah dikirim. Cek emailmu.");
           setMode("login");
         }
       } else {
@@ -99,17 +113,36 @@ function AuthScreen() {
               style={_authInput}
             />
           </div>
-          <div className="relative">
-            <span className="absolute" style={{ left: 13, top: 13, color: "var(--ink-40)" }}><Icon name="Lock" size={18} /></span>
-            <input
-              type="password" value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter") submit(); }}
-              placeholder="Password (min. 6 karakter)"
-              style={_authInput}
-            />
-          </div>
+          {!isForgot && (
+            <div className="relative">
+              <span className="absolute" style={{ left: 13, top: 13, color: "var(--ink-40)" }}><Icon name="Lock" size={18} /></span>
+              <input
+                type="password" value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") submit(); }}
+                placeholder="Password (min. 6 karakter)"
+                style={_authInput}
+              />
+            </div>
+          )}
         </div>
+
+        {mode === "login" && (
+          <button
+            type="button"
+            onClick={() => switchMode("forgot")}
+            className="w-full text-left"
+            style={{ marginTop: 12, fontSize: 13.5, color: "var(--ink-60)", textDecoration: "underline" }}
+          >Lupa password?</button>
+        )}
+        {mode === "forgot" && (
+          <button
+            type="button"
+            onClick={() => switchMode("login")}
+            className="w-full text-left"
+            style={{ marginTop: 12, fontSize: 13.5, color: "var(--ink-60)", textDecoration: "underline" }}
+          >Kembali ke Masuk</button>
+        )}
 
         {err && (
           <div className="flex items-start gap-2" style={{ marginTop: 14, padding: "10px 12px", borderRadius: 12, background: "rgba(180,69,60,0.08)" }}>
@@ -125,19 +158,136 @@ function AuthScreen() {
         )}
 
         <div style={{ marginTop: 18 }}>
-          <PrimaryButton icon={isSignup ? "UserPlus" : "LogIn"} disabled={!valid || busy} onClick={submit}>
-            {busy ? "Memproses…" : isSignup ? "Buat Akun" : "Masuk"}
+          <PrimaryButton icon={isSignup ? "UserPlus" : isForgot ? "Mail" : "LogIn"} disabled={!valid || busy} onClick={submit}>
+            {busy ? "Memproses…" : isSignup ? "Buat Akun" : isForgot ? "Kirim Link Reset" : "Masuk"}
           </PrimaryButton>
         </div>
 
         <p style={{ fontSize: 11.5, color: "var(--ink-40)", textAlign: "center", marginTop: 14, lineHeight: 1.5 }}>
           {isSignup
             ? "Akses terbatas untuk 10 pengguna pertama."
-            : "Belum punya akun? Pilih “Daftar” di atas."}
+            : isForgot
+              ? "Masukkan email akunmu, lalu cek inbox untuk link reset password."
+              : "Belum punya akun? Pilih “Daftar” di atas."}
         </p>
       </div>
     </div>
   );
 }
 
+function PasswordResetScreen({ onComplete }) {
+  const [phase, setPhase] = useState("pending");
+  const [password, setPassword] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+  const [info, setInfo] = useState("");
+
+  useEffect(() => {
+    let alive = true;
+    async function recover() {
+      const { data, error } = await LK_API.getSessionFromUrl();
+      if (!alive) return;
+      if (error || !data || !data.session) {
+        setErr("Tautan reset password tidak valid atau sudah kadaluwarsa.");
+        setPhase("error");
+        return;
+      }
+      setPhase("ready");
+    }
+    recover();
+    return () => { alive = false; };
+  }, []);
+
+  async function submit() {
+    if (busy || password.length < 6) return;
+    setBusy(true); setErr(""); setInfo("");
+    try {
+      const { error } = await LK_API.updatePassword(password);
+      if (error) {
+        setErr(_authFriendly(error));
+      } else {
+        setInfo("Password berhasil diperbarui.");
+        setPhase("success");
+        if (window.history && window.history.replaceState) {
+          window.history.replaceState(null, "", window.location.pathname);
+        }
+        if (typeof onComplete === "function") {
+          onComplete();
+        }
+      }
+    } catch (e) {
+      setErr("Terjadi kesalahan jaringan. Coba lagi.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="flex h-full w-full flex-col" style={{ background: "var(--bg)", paddingTop: 64 }}>
+      <div className="lk-scroll flex flex-1 flex-col justify-center overflow-y-auto" style={{ padding: "0 26px 48px" }}>
+        <div className="flex flex-col items-center animate-fade-up" style={{ marginBottom: 26 }}>
+          <img src="logo.png" alt="LemariKu" draggable={false} style={{ width: 140, height: 140, objectFit: 'contain' }} />
+          <h1 className="font-serif" style={{ fontSize: 42, color: "var(--ink)", marginTop: 14, lineHeight: 1 }}>Reset Password</h1>
+          <p style={{ fontSize: 13.5, color: "var(--ink-60)", marginTop: 8, textAlign: "center" }}>
+            {phase === "pending"
+              ? "Memproses tautan reset password…"
+              : "Masukkan password baru untuk akunmu."}
+          </p>
+        </div>
+
+        {phase === "pending" ? (
+          <div className="flex items-center justify-center" style={{ minHeight: 180 }}>
+            <div className="lk-spin" style={{ width: 42, height: 42, borderRadius: "50%", border: "4px solid var(--sage-tint)", borderTopColor: "var(--sage)" }}></div>
+          </div>
+        ) : phase === "error" ? (
+          <div style={{ padding: 20, background: "var(--card)", borderRadius: 18 }}>
+            <div style={{ marginBottom: 16, fontSize: 15, color: "var(--ink)" }}>{err}</div>
+            <button
+              type="button"
+              onClick={() => onComplete && onComplete()}
+              className="w-full rounded-2xl font-semibold transition-all"
+              style={{ padding: "14px", fontSize: 15, background: "white", color: "var(--ink)", border: "1px solid var(--line)" }}
+            >Kembali ke Masuk</button>
+          </div>
+        ) : (
+          <>
+            <div className="flex flex-col gap-3">
+              <div className="relative">
+                <span className="absolute" style={{ left: 13, top: 13, color: "var(--ink-40)" }}><Icon name="Lock" size={18} /></span>
+                <input
+                  type="password" value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter") submit(); }}
+                  placeholder="Password baru (min. 6 karakter)"
+                  style={_authInput}
+                />
+              </div>
+            </div>
+
+            {err && (
+              <div className="flex items-start gap-2" style={{ marginTop: 14, padding: "10px 12px", borderRadius: 12, background: "rgba(180,69,60,0.08)" }}>
+                <span style={{ color: "#b4453c", marginTop: 1 }}><Icon name="TriangleAlert" size={16} stroke={2} /></span>
+                <span style={{ fontSize: 12.5, color: "#9c3a32", lineHeight: 1.4 }}>{err}</span>
+              </div>
+            )}
+            {info && (
+              <div className="flex items-start gap-2" style={{ marginTop: 14, padding: "10px 12px", borderRadius: 12, background: "rgba(109,130,113,0.12)" }}>
+                <span style={{ color: "var(--sage)", marginTop: 1 }}><Icon name="Info" size={16} stroke={2} /></span>
+                <span style={{ fontSize: 12.5, color: "#566b5a", lineHeight: 1.4 }}>{info}</span>
+              </div>
+            )}
+
+            <div style={{ marginTop: 18 }}>
+              <PrimaryButton icon="Lock" disabled={password.length < 6 || busy} onClick={submit}>
+                {busy ? "Memproses…" : "Ubah Password"}
+              </PrimaryButton>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 window.AuthScreen = AuthScreen;
+window.PasswordResetScreen = PasswordResetScreen;

@@ -317,9 +317,14 @@ function ConfigNeeded() {
 
 function Root() {
   const [session, setSession] = useState(undefined); // undefined=cek, null=belum login
+  const [showReset, setShowReset] = useState(false);
 
   useEffect(() => {
     if (!window.sb) return;
+    const url = new URL(window.location.href);
+    const isRecovery = url.searchParams.get("type") === "recovery" || window.location.hash.includes("access_token=");
+    if (isRecovery) setShowReset(true);
+
     let sub;
     LK_API.getSession().then((s) => setSession(s || null)).catch(() => setSession(null));
     sub = LK_API.onAuthChange((s) => setSession(s || null));
@@ -327,6 +332,7 @@ function Root() {
   }, []);
 
   if (!window.sb) return <ConfigNeeded />;
+  if (showReset && !session) return <PasswordResetScreen onComplete={() => setShowReset(false)} />;
   if (session === undefined) return <LoadingScreen label="Menyiapkan…" />;
   if (!session) return <AuthScreen />;
   return <App session={session} key={session.user ? session.user.id : "app"} />;

@@ -39,6 +39,20 @@ const LK_API = {
   async signOut() {
     await sb.auth.signOut();
   },
+  async resetPasswordEmail(email) {
+    const { data, error } = await sb.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin + window.location.pathname,
+    });
+    return { data, error };
+  },
+  async getSessionFromUrl() {
+    const { data, error } = await sb.auth.getSessionFromUrl();
+    return { data, error };
+  },
+  async updatePassword(password) {
+    const { data, error } = await sb.auth.updateUser({ password });
+    return { data, error };
+  },
 
   /* ───────── Data ───────── */
   async loadAll() {
