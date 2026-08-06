@@ -323,7 +323,9 @@ function Root() {
     if (!window.sb) return;
     const url = new URL(window.location.href);
     const hash = window.location.hash || "";
+    const pathname = window.location.pathname || "";
     const isRecovery =
+      pathname === "/reset-password" ||
       url.searchParams.get("type") === "recovery" ||
       window.location.search.includes("type=recovery") ||
       hash.includes("type=recovery") ||

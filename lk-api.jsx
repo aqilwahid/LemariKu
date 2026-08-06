@@ -40,10 +40,10 @@ const LK_API = {
     await sb.auth.signOut();
   },
   async resetPasswordEmail(email) {
-    const origin = window.location.origin;
+    const origin = window.location.origin.replace(/\/$/, "");
     const redirectTo = /localhost(:\d+)?$/.test(origin)
-      ? "https://lemari-ku.vercel.app"
-      : origin;
+      ? "https://lemari-ku.vercel.app/reset-password"
+      : origin + "/reset-password";
     const { data, error } = await sb.auth.resetPasswordForEmail(email, { redirectTo });
     return { data, error };
   },

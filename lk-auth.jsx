@@ -188,8 +188,8 @@ function PasswordResetScreen({ onComplete }) {
       const { data, error } = await LK_API.getSessionFromUrl();
       if (!alive) return;
       if (error || !data || !data.session) {
-        setErr("Tautan reset password tidak valid atau sudah kadaluwarsa.");
-        setPhase("error");
+        setErr("Masukkan link reset dari email atau buka kembali email reset.");
+        setPhase("ready");
         return;
       }
       setPhase("ready");
