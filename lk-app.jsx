@@ -335,9 +335,13 @@ function Root() {
     async function initAuth() {
       if (isRecovery) {
         setShowReset(true);
-        const { data } = await LK_API.getSessionFromUrl();
-        if (data && data.session) {
-          setSession(data.session);
+        try {
+          const { data } = await LK_API.getSessionFromUrl();
+          if (data && data.session) {
+            setSession(data.session);
+          }
+        } catch (e) {
+          // fallback; session may still be loaded automatically by detectSessionInUrl
         }
       }
       LK_API.getSession().then((s) => setSession(s || null)).catch(() => setSession(null));

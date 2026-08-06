@@ -185,14 +185,20 @@ function PasswordResetScreen({ onComplete }) {
   useEffect(() => {
     let alive = true;
     async function recover() {
-      const { data, error } = await LK_API.getSessionFromUrl();
-      if (!alive) return;
-      if (error || !data || !data.session) {
-        setErr("Masukkan link reset dari email atau buka kembali email reset.");
+      try {
+        const { data, error } = await LK_API.getSessionFromUrl();
+        if (!alive) return;
+        if (error || !data || !data.session) {
+          setErr("Tautan reset tidak valid atau sudah kadaluarsa. Buka kembali email reset.");
+          setPhase("error");
+          return;
+        }
         setPhase("ready");
-        return;
+      } catch (e) {
+        if (!alive) return;
+        setErr("Terjadi kesalahan saat memproses tautan reset. Coba buka kembali email reset.");
+        setPhase("error");
       }
-      setPhase("ready");
     }
     recover();
     return () => { alive = false; };

@@ -48,8 +48,12 @@ const LK_API = {
     return { data, error };
   },
   async getSessionFromUrl() {
-    const { data, error } = await sb.auth.getSessionFromUrl();
-    return { data, error };
+    if (typeof sb.auth.getSessionFromUrl === "function") {
+      const { data, error } = await sb.auth.getSessionFromUrl();
+      return { data, error };
+    }
+    const session = await this.getSession();
+    return { data: { session }, error: null };
   },
   async updatePassword(password) {
     const { data, error } = await sb.auth.updateUser({ password });
